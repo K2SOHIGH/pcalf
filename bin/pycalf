@@ -1,0 +1,363 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+        
+               _ (.".) _    
+              '-'/. .\'-'   
+    pyCALF      ( o o )     
+                 `"-"`  jgs    
+
+
+        pyCALF stand for python CALcyanin Finder
+        The calcyanin protein will be search and annotated within your input file(s) following three steps:
+            1) the glycine triplication specific of calcyanin will be searched using a specific HMM profile.
+            2) glycine zipper will be annotated individually using specifics HMM models for sequences with a glycine triplication.
+            3) the N-ter extremity of sequences with a glyX3 will be annotated using blastp and known n-ter as subject database.
+"""
+
+
+import argparse
+import os
+import sys
+import shutil
+import logging
+import multiprocessing
+from importlib import resources
+import gzip
+
+import pandas as pd
+
+from pycalf.core import search,Sequences
+from pycalf.utils import utils as u
+from pycalf.utils import log
+
+
+logging.basicConfig(
+    format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
+    level=logging.INFO,
+    handlers=[]
+)
+
+DATASDIR = os.path.join(resources.files("pycalf"),"datas")
+
+def get_args():
+    parser = argparse.ArgumentParser(
+        description="""pyCALF
+                        
+    pyCALF stand for python CALcyanin Finder
+
+    The input fasta file will be scanned in searched of calcyanin following three steps:
+    - First a specific HMM profile of the glycine triplication will be searched using HMMSEARCH.
+    - Secondly, sequences with a hit in step 1 will be more precisely annotated using specifics HMM profiles for each glycine zipper.
+    - Finally, a set of known N-ter will be blast against sequences with a hit in step 1.
+    
+    """,
+        formatter_class= argparse.RawTextHelpFormatter
+    )
+    parser.add_argument('-f','--fasta', dest='fasta', #action="extend", nargs="+" , 
+                        type=argparse.FileType('r'), default=(None if sys.stdin.isatty() else sys.stdin),
+                        help='Fasta file')
+                       
+    parser.add_argument('-i','--input-file', dest='input', #action="extend", nargs="+" , 
+                        type=argparse.FileType('r'), default=None,
+                        help='Tabular file with name\t/path/to/file as lines')
+                        
+    # parser.add_argument('-e', dest='file_extension', type=str, default="faa.gz" , 
+    #                     help='input files extension')            
+
+    parser.add_argument('-o', dest='res_dir', type=str, required=True,
+                        help='output directory')   
+
+    parser.add_argument('--glyx3-hmm', dest='glyx3_phmm', type=str, default= DATASDIR + "/GlyX3.hmm" ,
+                        help='path to GlyX3 hmm profile (default: %(default)s)" ')   
+    parser.add_argument('--glyx3-msa', dest = 'glyx3_msa', 
+                        default = DATASDIR + "/GlyX3.msa.fa", 
+                        help='path to GlyX3 msa (default: %(default)s)')                                     
+
+    parser.add_argument('--domz', dest='domz', type=int, default=10000,
+                        help='sequence space size (default: %(default)s)"')     
+
+    parser.add_argument('--glyx3-coverage', dest='gly3_coverage_threshold', 
+                        type=float,default=0.62,
+                        help="minimal coverage to be considered as a potential calcyanin (default: %(default)s)" )
+    
+    parser.add_argument('--glyx3-evalue', dest='gly3_evalue_threshold', 
+                        type=float,default=1e-30,
+                        help="hit's evalue threshold (default: %(default)s)")
+                        
+    parser.add_argument('--glyx3-i-evalue', dest='gly3_i_evalue_threshold', 
+                        type=float,default=1,
+                        help="domain's i_evalue threshold (default: %(default)s)")
+
+    parser.add_argument('--gly1-phmm', dest = 'gly1_phmm', 
+                        default = DATASDIR + "/Gly1.hmm", 
+                        help='path to GlyZip1 hmm profile (default: %(default)s)')
+    parser.add_argument('--gly1-msa', dest = 'gly1_msa', 
+                        default = DATASDIR + "/Gly1.msa.fa", 
+                        help='path to GlyZip1 msa (default: %(default)s)')
+
+    parser.add_argument('--gly2-phmm', dest = 'gly2_phmm', 
+                        default = DATASDIR + "/Gly2.hmm", 
+                        help='path to GlyZip2 hmm profile (default: %(default)s)')
+    parser.add_argument('--gly2-msa', dest = 'gly2_msa', 
+                        default = DATASDIR + "/Gly2.msa.fa", 
+                        help='path to GlyZip2 msa (default: %(default)s)')
+
+    parser.add_argument('--gly3-phmm', dest = 'gly3_phmm', 
+                        default = DATASDIR + "/Gly3.hmm", 
+                        help='path to GlyZip3 hmm profile (default: %(default)s)')
+    parser.add_argument('--gly3-msa', dest = 'gly3_msa', 
+                        default = DATASDIR + "/Gly3.msa.fa", 
+                        help='path to GlyZip3 msa (default: %(default)s)')                        
+
+    parser.add_argument('--glyzip-i-evalue', dest='glyzip_i_evalue', 
+                        type=float,default=3.6e-4,
+                        help = "glyzip i-evalue threshold (default: %(default)s)" )
+    parser.add_argument('--glyzip-evalue', dest='glyzip_evalue', 
+                        type=float,default=1,
+                        help="glyzip evalue threshold (default: %(default)s)")
+    
+    parser.add_argument('--blastp', default = None)
+
+    parser.add_argument('--nterdb', dest='nterdb_fa', 
+                        default = DATASDIR + "/nterdb.fasta", 
+                        help='path to nterdb fasta file (default: %(default)s)')
+    parser.add_argument('--nter-mapping-file', dest='nterdb_tab', 
+                        default= DATASDIR + "/nterdb.tsv", 
+                        help='path to nterdb mapping file (default: %(default)s)')
+    parser.add_argument('--nter-coverage', dest='nter_coverage', 
+                        type=float,default=80,
+                        help="nter minimal coverage (default: %(default)s)")
+    parser.add_argument('--nter-evalue', dest='nter_evalue', 
+                        type=float,default=1e-07,
+                        help="nter evalue threshold (default: %(default)s)")
+    
+    parser.add_argument('--keep-all', action="store_true" , 
+                        help="If set sequences with a partial hit against the GlyX3 profile (e.g Gly1,Gly2) will be kept")
+
+    parser.add_argument('--log', default = None , type=str)
+
+    parser.add_argument('-q', '--quiet', action="store_true" , help="Silent stdout logging")
+
+    parser.add_argument('--debug', action="store_true")
+
+    parser.add_argument('--force', action = "store_true" ,help = "overwrite output directory")
+
+    parser.add_argument('--threads', type=int, default = multiprocessing.cpu_count(),
+                        help="(default: %(default)s)")
+        
+    args = parser.parse_args()
+    
+    return args
+
+
+def main():
+    args = get_args()
+
+    # Setup Logger and Handlers
+    level = logging.INFO
+    if args.debug:
+        level = logging.DEBUG
+    if not args.quiet:
+        console = logging.StreamHandler()
+        console.setLevel(level)
+        console.setFormatter(log.CustomFormatter())
+        logging.getLogger('').addHandler(
+            console
+        )
+    if args.log:
+        os.makedirs(os.path.dirname(os.path.abspath(args.log)),exist_ok=True)
+        fhandler = logging.FileHandler(args.log)
+        fhandler.setLevel(level)
+        fhandler.setFormatter(log.CustomFormatter())
+        logging.getLogger('').addHandler(
+            fhandler
+        )
+    
+    
+    if not shutil.which("blastp"):
+        logging.error("blast not found, please, considere installing it using conda install -c bioconda blast.")
+        exit(-1)
+    else:
+        logging.debug("blastp found : {}".format(shutil.which("blastp")))
+
+    res_dir = os.path.abspath(args.res_dir)
+
+    if os.path.exists(res_dir):
+        if args.force:
+            logging.debug("{} directory have been removed because of the --force flag.".format(res_dir))
+            shutil.rmtree(res_dir)            
+        else:
+            logging.error("Output directory already exist , Bye !")
+            exit(-1)
+    
+
+    if (args.fasta and args.input) or (not args.fasta and  not args.input) :
+        logging.error("Come on, please choose one between --fasta and --input-file...")
+        exit(-1)
+
+
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(log.CustomFormatter())
+    logging.getLogger('').addHandler(
+        console)
+    #f = "/Users/mmillet/harley_databases/tmp/datas/taxids/1126/ncbi_dataset/data/GCA_008757435.1/cds_from_genomic.faa.gz"
+    glyx3 = Hmm("test.hmm","../datas/GlyX3.msa.fa")
+    gly1 = Hmm("../datas/Gly1.hmm","../datas/Gly1.msa.fa")
+    gly2 = Hmm("../datas/Gly2.hmm","../datas/Gly2.msa.fa")
+    gly3 = Hmm("../datas/Gly3.hmm","../datas/Gly3.msa.fa")
+    nter = "../datas/nterdb.fasta"
+
+    fastas = []
+    names = []
+    with open("test.txt") as stream:
+        for line in stream.readlines():
+            n,f = line.strip().split()
+            fastas.append(f)
+            names.append(n)
+    logging.info("Search start.")
+    calc = iterative_search(
+        fastas[0:5],
+        names[0:5],
+        glyx3,
+        gly1,
+        gly2,
+        gly3,
+        nter,        
+        glyx3_evalue_threshold=1e-30)
+
+    ########@@
+    # os.makedirs(res_dir,exist_ok=True)       
+    # glyx3_hmm = u.easelhmm(args.glyx3_phmm)
+    # glyzip_hmm = [ u.easelhmm(i)  for i in [args.gly1_phmm,args.gly2_phmm,args.gly3_phmm] ]
+
+
+
+    # if args.fasta:
+    #     annotations=[]
+    #     InputF = "stdin" if not isinstance(args.fasta,str) else os.path.basename(args.fasta)
+    #     annotations.append(annotate.annotate_st(args.fasta , glyx3_hmm , glyzip_hmm , args.nterdb_fa,
+    #         args.nterdb_tab , args , InputF = InputF ))
+    # else:
+    #     #start = time.perf_counter()        
+    #     input_datas = []
+        
+    #     for line in args.input.readlines():
+    #         fid , fil  = line.strip().split()[0:2]
+    #         annotargs = (gzip.open(fil,'rt'),glyx3_hmm , glyzip_hmm , args.nterdb_fa,
+    #                     args.nterdb_tab , args )
+    #         input_datas.append((annotargs,{"InputF":fid}))
+
+    #     annotations = annotate.annotate_mt(input_datas)
+    
+    # ldf = []
+    # annotated_sequences = {}
+    # for f in annotations: 
+    #     hits,seqs = f[0]
+    #     if hits:
+    #         df = pd.DataFrame([h.to_dict() for h in hits])
+            
+    #         for seqid in df.seqid.unique():
+    #             annotated_sequences[seqid] = seqs[seqid]
+    #         df["src_file"] = f[1]["InputF"]
+    #         ldf.append(df)
+    # features_df = pd.concat(ldf,axis=0)        
+    # del df,ldf
+ 
+    # #logger.info("Summarizing calcyanin modular organization to %s" % res_dir + "/summary.csv" )
+    # reliable_cpt = 0
+    # sequence_identifier=[] 
+    # sequence_datas = []
+    # if features_df is not None:
+    #         for seqid , featuredf in features_df.groupby("seqid"):
+    #             #resolve cter OM
+    #             cterom = ",".join(
+    #                 list(
+    #                     featuredf[featuredf.desc == "glyzip"].sort_values("start").domid
+    #                     )
+    #             )                
+    #             # resovle nter OM
+    #             nterom = "".join(list(featuredf[featuredf.desc == "nter"].domid))
+    #             # make flag
+    #             flag = u.summarize(nterom,cterom)
+    #             src = "".join(featuredf.src_file.unique())
+    #             if not args.keep_all:                    
+    #                 if flag not in ["Calcyanin with known N-ter","Calcyanin with new N-ter"]:
+    #                     continue
+    #                 else:
+    #                     reliable_cpt += 1                 
+    #             sequence = annotated_sequences[seqid].textize().sequence                        
+    #             sequence_datas.append({
+    #                 "seqid":seqid,
+    #                 "flag":flag,
+    #                 "nter":nterom,
+    #                 "cter":cterom,
+    #                 "src":src,   
+    #                 "seqlen":len(sequence),
+    #                 "sequence":sequence,
+    #             })
+    #              #   "{}\t{}\t{}\t{}\n{}\n".format(
+    #              #   seqid, flag , nterom, cterom , src )
+    #             ##)
+    #             #sequence_identifier.append(seqid)
+    # pd.DataFrame(sequence_datas).set_index("seqid").to_csv(args.res_dir + "/pycalf_summary.tsv",sep="\t",header=True,index=True)
+    # features_df.set_index("seqid").to_csv(args.res_dir + "/pycalf_features.tsv",sep="\t",header=True,index=True)
+    # return None
+        
+    # if sequence_datas:
+    #     with open(res_dir + "/summary.tsv" , "w") as stream:                                            
+    #         stream.write("accession\tflag\tnter\tcter\n")
+    #         for s in sequence_datas:
+    #             stream.write(s)
+    #     logger.info("Summary table save to %s " % res_dir + "/summary.csv")            
+        
+    #     logger.info("make feature table ... ")
+    #     summary_df[summary_df.seqid.isin(sequence_identifier)].to_csv(
+    #             res_dir + "/features.tsv",
+    #             index=False,
+    #             header=True,
+    #             sep="\t"
+    #     )
+    #     logger.info("Feature table save to %s " % res_dir + "/features.csv")
+    #     logger.info("done.")                              
+        
+
+    #     # save calcyanin full length sequence into fasta        
+    #     u.writefasta(
+    #         u.filterfasta(glyx3seqs,sequence_identifier),
+    #         res_dir + "/fastas/calcyanin.fasta"
+    #     )      
+
+    #     # save n-ter by type  
+    #     print(summary_df)
+    #     for domain_type in summary_df.domid.unique():
+    #         l = []
+    #         if nter:
+    #             for h in (glyx3hits + glyziphits +  nterhits):
+                    
+    #                 if h.domid == domain_type:
+                        
+    #                     l.append(
+    #                         h.extract_from_fasta(sequences)
+    #                     )
+    #             print(domain_type,l)
+
+  
+
+
+
+
+    #     logger.warning("%i reliable calcyanin found." % reliable_cpt)
+        
+    #     logger.warning("%i reliable calcyanin found." % 0)                
+    #     logger.info("done.")
+              
+    # else:
+    
+    #     logger.warning("No hits against glyX3 hmm ... " )
+    
+    logger.info("end ! ")
+
+if __name__ == "__main__":
+    sys.exit(main())

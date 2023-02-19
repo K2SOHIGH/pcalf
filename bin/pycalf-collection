@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import argparse
+import os
+import sys
+import shutil
+import multiprocessing
+from importlib import resources
+
+from pycalf.utils import utils as u
+from pycalf.utils import log
+
+logger = log.setlogger(os.path.basename(__file__))
+
+
+
+DATASDIR = os.path.join(resources.files("pycalf"),"datas")
+SNAKEFILE = os.path.join(resources.files("pycalf"),"workflow","Snakefile")
+
+def get_args():
+    parser = argparse.ArgumentParser(
+            prog=os.path.basename(__file__),
+            description='run pyCALF on a collection of fasta files.'
+    )
+
+    parser.add_argument(
+        '-i',
+        '--input',
+        dest="INPUT",
+        type = str,
+        required=True,
+        help="yaml file containing path to translated cds files , a fasta file or a directory containing fasta files"
+    )
+
+    parser.add_argument(
+        '-o',
+        '--output-directory',
+        dest= "RESDIR",
+        type = str,
+        default="pycalf-results",
+        help="output directory"
+    )
+
+    parser.add_argument(
+        '-e',
+        '--extension',
+        dest = "extension",
+        type = str,
+        default="faa.gz",
+        help="input file extension"
+    )
+
+    parser.add_argument('--glyx3-hmm', dest='glyx3_phmm', type=str, default= DATASDIR + "/GlyX3.hmm" ,
+                        help='path to GlyX3 hmm profile (default: %(default)s)" ')  
+
+    parser.add_argument('--domz', dest='domz', type=int, default=10000,
+                        help='sequence space size (default: %(default)s)"')     
+
+    parser.add_argument('--glyx3-coverage', dest='gly3_coverage_threshold', 
+                        type=int,default=0.62,
+                        help="minimal coverage to be considered as a potential calcyanin (default: %(default)s)" )
+    # parser.add_argument('--glyx3-qcovhsp', dest='gly3_qcovhps', type=int,default=0)
+    parser.add_argument('--glyx3-evalue', dest='gly3_evalue_threshold', 
+                        type=int,default=1e-30,
+                        help="hit's evalue threshold (default: %(default)s)")
+    parser.add_argument('--glyx3-i-evalue', dest='gly3_i_evalue_threshold', 
+                        type=int,default=1,
+                        help="domain's i_evalue threshold (default: %(default)s)")
+
+    parser.add_argument('--keep-all', action="store_true" , 
+                        help="If set sequences with a partial hit against the GlyX3 profile (e.g Gly1,Gly2) will be kept")
+
+    parser.add_argument('--nterdb', dest='nterdb_fa', 
+                        default = DATASDIR + "/nterdb.fasta", 
+                        help='path to nterdb fasta file (default: %(default)s)')
+    parser.add_argument('--nter-mapping-file', dest='nterdb_tab', 
+                        default= DATASDIR + "/nterdb.tsv", 
+                        help='path to nterdb mapping file (default: %(default)s)')
+    parser.add_argument('--nter-coverage', dest='nter_coverage', 
+                        type=int,default=80,
+                        help="nter minimal coverage (default: %(default)s)")
+    parser.add_argument('--nter-evalue', dest='nter_evalue', 
+                        type=int,default=1e-07,
+                        help="nter evalue threshold (default: %(default)s)")
+
+    parser.add_argument('--gly1-phmm', dest = 'gly1_phmm', 
+                        default = DATASDIR + "/Gly1.hmm", 
+                        help='path to GlyZip1 hmm profile (default: %(default)s)')
+    parser.add_argument('--gly2-phmm', dest = 'gly2_phmm', 
+                        default = DATASDIR + "/Gly2.hmm", 
+                        help='path to GlyZip2 hmm profile (default: %(default)s)')
+    parser.add_argument('--gly3-phmm', dest = 'gly3_phmm', 
+                        default = DATASDIR + "/Gly3.hmm", 
+                        help='path to GlyZip3 hmm profile (default: %(default)s)')
+
+    parser.add_argument('--glyzip-i-evalue', dest='glyzip_i_evalue', 
+                        type=int,default=3.6e-4,
+                        help = "glyzip i-evalue threshold (default: %(default)s)" )
+    parser.add_argument('--glyzip-evalue', dest='glyzip_evalue', 
+                        type=int,default=1,
+                        help="glyzip evalue threshold (default: %(default)s)")
+    
+    parser.add_argument('--log', default = None)
+
+    parser.add_argument('--blastp', default = None)
+
+    parser.add_argument(
+        '-t',
+        '--threads',
+        type = int,
+        default = multiprocessing.cpu_count()-1,
+        help = "number of threads",
+    )
+
+    parser.add_argument('--snakargs', dest='snakargs', type=str, default="",
+            help='snakmake arguments')
+
+    args = parser.parse_args()
+    return args
+
+def main():
+    if not shutil.which("blastp"):
+        logger.error("blast not found, please, considere installing it using conda install -c bioconda blast.")
+        exit(-1)
+    if not shutil.which("snakemake"):
+        logger.error("snakemake not found, please, considere installing it using conda install snakemake.")
+        exit(-1)
+    args = get_args()
+    
+    CONDAPREFIX = os.path.abspath(
+            os.path.join(os.path.dirname(__file__),"..","condaenvs")
+        )
+    u.module(SNAKEFILE,CONDAPREFIX,args)
+
+
+
+if __name__ == "__main__":
+
+    sys.exit(main())

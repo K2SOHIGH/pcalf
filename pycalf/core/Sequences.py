@@ -13,7 +13,6 @@ if sys.version_info[0] < 3:
 else:
     from io import StringIO
 
-import tqdm
 import numpy as np
 import pandas as pd
 import pyhmmer.easel
@@ -21,9 +20,9 @@ from   Bio import SeqIO
 from   Bio.SeqRecord import SeqRecord
 from   Bio.SeqFeature import SeqFeature, FeatureLocation
 
-from pycalf.utils import log
+#from pycalf.utils import log
 
-class IO:
+class SequencesIO:
     def _openfile(self,filename):
         if filename.endswith('.gz'):
             return gzip.open(filename,"rt") 
@@ -55,16 +54,11 @@ class IO:
         assert not isinstance(filehandle,str), "Expect file like object not str"
         SeqIO.write(sequences, filehandle,format="fasta")
 
-    def load_hmm(self,hmmfile):
-        with pyhmmer.plan7.HMMFile(hmmfile) as hhl:
-            hmm = hhl.read()
-        return hmm
-    
+
     def load_msa(self,msafile):
         with pyhmmer.easel.MSAFile("data/msa/LuxC.sto") as msa_file:
             msa_file.set_digital(pyhmmer.easel.Alphabet.amino())
             msa = next(msa_file)
-
 
 class Hit:
     def __init__(self,        
@@ -105,12 +99,12 @@ class Seq(SeqRecord):
     def sanitize_record(self,seq):
         return seq.replace("-","")
 
-    def digitize(self):
+    def digitize(self,alphabet=pyhmmer.easel.Alphabet.amino()):
         return pyhmmer.easel.TextSequence(
             sequence=str(self.seq),
             name=self.id.encode(),
             description=self.description.encode()
-            ).digitize(pyhmmer.easel.Alphabet.amino())
+            ).digitize(alphabet)
 
     def get_feature(self,feature_id=None):
         fseq = []
@@ -147,13 +141,12 @@ class Seq(SeqRecord):
 
     def addhit(self,hit):
         assert isinstance(hit,Hit)
-        self.hits.append(hit)
+        self.hits.append(hit)        
 
 
-
-class Sequences(IO):
+class Sequences(SequencesIO):
     def __init__(self,fasta=None,src="",**kwargs):        
-        self._sequences = self._parse_fasta(fasta,src=src) if fasta else []#{}#SeqIO.to_dict(SeqIO.parse(fasta,format="fasta"))
+        self._sequences = self._parse_fasta(fasta,src=src) if fasta else []
 
     @property
     def sequences(self):
@@ -180,10 +173,10 @@ class Sequences(IO):
             features+=seq.get_feature(feature_id=feature_id)
         return features
 
-    def digitize(self):
+    def digitize(self,alphabet=pyhmmer.easel.Alphabet.amino()):
         digital_records = []
         for seq in self._sequences:
-            digital_records.append(seq.digitize())
+            digital_records.append(seq.digitize(alphabet))
         return digital_records
 
     def hamming_distance(self,str1, str2):
@@ -194,8 +187,9 @@ class Sequences(IO):
     def hmmsearch(self,hmms:list,cpus=multiprocessing.cpu_count()-1, **kwargs):
         assert isinstance(hmms,list)
         for hmm in hmms:
-            assert isinstance(hmm, pyhmmer.plan7.HMM)
-
+            print(type(hmm.hmm))
+            assert isinstance(hmm.hmm, pyhmmer.plan7.HMM)
+        hmms = [hmm.hmm for hmm in hmms]
         hits = pyhmmer.hmmsearch(hmms,self.digitize(),cpus=cpus)
 
         hmm_datas = [(h.name.decode("UTF-8"),h.M)  for h in hmms]
@@ -215,7 +209,7 @@ class Sequences(IO):
                             target_len=hmm_len,
                             start_location=dom.alignment.target_from,
                             stop_location=dom.alignment.target_to,
-                            score = dom.i_evalue,# np.format_float_scientific( val ,precision=4) ,
+                            score = dom.i_evalue, # np.format_float_scientific( val ,precision=4) ,
                             method="hmmsearch",
                             coverage=(dom.alignment.target_to-dom.alignment.target_from)/hmm_len,#len(seq.seq),
                             src = hmm_id,
@@ -226,8 +220,8 @@ class Sequences(IO):
         
         sequences_with_hit = Sequences()
         sequences_with_hit.sequences = [self.get_seq_by_id(sid) for sid in seq_with_hit]
-
         return sequences_with_hit
+
 
     def blastp(self,blast_subject_fasta,evalue="1e-4",outfmt="10 std slen"):        
         blastpexec = which('blastp')
@@ -244,19 +238,16 @@ class Sequences(IO):
                     "-query" , query.name,
                     "-subject", blast_subject_fasta,
                     "-evalue" , str(evalue),
-                    "-outfmt" , '"10 std slen"'
-                    # '"10 delim=; qacc sacc qlen slen evalue bitscore score pident nident mismatch qstart qend sstart send length qseq sseq qcovs qcovhsp"'
+                    "-outfmt" , '"10 std slen"'                    
                 ]
 
         logging.info("running : " + " ".join(command))       
-    
         # using shell=true is not a problem here
         o = subprocess.run(" ".join(command) , capture_output=True , shell=True)         
         res = o.stdout.decode('ascii').strip()
 
         if res:
             df = pd.read_table( StringIO(res)  , sep=","  , header=None )          
-            # df.columns = "qacc sacc qlen slen evalue bitscore score pident nident mismatch qstart qend sstart send length qseq sseq qcovs qcovhsp".split(" ")
             df.columns = "qacc sacc pident length mismatch gapopen qstart qend sstart send evalue bitscore slen".split(" ")
             df.sort_values("pident",inplace=True,ascending=False)    
             df.set_index("qacc",inplace=True)

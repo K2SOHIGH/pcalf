@@ -1,0 +1,1782 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.10.0" />
+<title>pycalf.core.Sequences API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>pycalf.core.Sequences</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">import os
+import io
+import sys
+import logging
+import tempfile
+import gzip
+import subprocess
+import multiprocessing
+
+from shutil import which
+if sys.version_info[0] &lt; 3: 
+    from StringIO import StringIO
+else:
+    from io import StringIO
+
+import numpy as np
+import pandas as pd
+import pyhmmer.easel
+from   Bio import SeqIO
+from   Bio.SeqRecord import SeqRecord
+from   Bio.SeqFeature import SeqFeature, FeatureLocation
+
+
+
+class SequencesIO:
+    &#34;&#34;&#34;Class to handle IO operation for Sequences object&#34;&#34;&#34;
+    def _openfile(self,filename):
+        &#34;&#34;&#34;Open file in gzip or text mode.
+
+        Args:
+        filename (str): Path to file
+
+        Returns:
+        return Handle
+
+        Raises:
+        None
+        &#34;&#34;&#34;
+        if filename.endswith(&#39;.gz&#39;):
+            return gzip.open(filename,&#34;rt&#34;) 
+        else:
+            return open(filename, &#34;r&#34; )
+
+    def _parse_fasta(self,fasta,src=&#34;&#34;):   
+        &#34;&#34;&#34;Parse fasta file and return a list of Seq object.
+
+        Args:
+        fasta (str): Path to  file or file-like object.
+        src (str): Name used to keep trace of the original file for each record. Useful when multiple fasta file will be mixed. 
+
+        Returns:
+        return a list of Seq.
+
+        Raises:
+        FileNotFoundError; If fasta doesn&#39;t exist. 
+        &#34;&#34;&#34;     
+        if isinstance(fasta,str):
+            if not os.path.exists(fasta):
+                raise FileNotFoundError(&#34;{} not found&#34;.format(fasta))  
+            else:
+                fhl = self._openfile(fasta)
+        else:
+            fhl = fasta
+        
+        assert isinstance(fhl,io.TextIOWrapper)
+
+        sequences = []
+        for record in SeqIO.parse(fhl,format=&#34;fasta&#34;):
+            if len(record.seq) &lt; 10000:
+                sequences.append(Seq(record,src=src))
+            else:                
+                logging.warning(&#34;Sequence {} seems very long and can&#39;t \
+                    be scan through hmmer&#34;.format(record.id))
+        return sequences
+
+    def to_fasta(self , filehandle ):
+        &#34;&#34;&#34;Dump fasta records.
+
+        Args:
+        filehandle (File like object): Handle.
+        
+        Returns:
+        None
+
+        Raises:
+        FileNotFoundError: If fasta can&#39;t be created.
+        AssertionError: If filehandle is not a file-like object.
+        &#34;&#34;&#34;    
+        assert not isinstance(filehandle,str), &#34;Expect file like object not str&#34;
+        SeqIO.write(self.sequences, filehandle,format=&#34;fasta&#34;)
+
+
+class Hit:
+    &#34;&#34;&#34;Class to store scores and location of features.
+    
+    Attributes:
+        hid (str): Name of the hit.
+        target_len (int): Length of the target.
+        start_location (int): Start location.
+        stop_location (int): Stop location.
+        score (float): E-value.
+        identity (float): Percentage of identity.
+        coverage (float): Coverage.
+        method (str): Method use to produced the hit.
+        src (str): Additional information about the origin of the hit.
+    &#34;&#34;&#34;
+    def __init__(self,        
+        hid=&#34;&#34;,
+        target_len:int=0,
+        start_location:int=0,
+        stop_location:int=0,
+        score:float=0,
+        identity:float=0,
+        coverage:float=0,
+        method:str=&#34;&#34;,
+        src:str=&#34;&#34;,
+        ):
+        
+        self.hid = hid
+        self.target_len=target_len
+        self.start_location = start_location
+        self.stop_location = stop_location
+        self.score = score
+        self.identity=identity
+        self.coverage = round(coverage,2) if coverage else coverage
+        self.method = method
+        self.src = src
+
+
+class Seq(SeqRecord):  
+    &#34;&#34;&#34;Seq object extend the SeqRecord class from biopython
+    
+    Attributes:
+        hits (list): List of Hit object if any. 
+        res (dict): Dictionnary with residue as key.
+    &#34;&#34;&#34;   
+
+    def __init__(self,seqrecord,src=None):      
+        SeqRecord.__init__(self,seq=seqrecord.seq)
+        self.id = seqrecord.id
+        self.name= seqrecord.name        
+        self.description = seqrecord.description
+        self.src = src       
+        self.hits = []
+        self.res = {}
+        self.sanitize_record()
+
+    def sanitize_record(self):
+        &#34;&#34;&#34;Remove gap character from sequence if any (inplace).
+        
+        Args:          
+            None
+
+        Raises:
+            None
+
+        Return:
+            None
+        &#34;&#34;&#34;
+        if self.seq:
+            self.seq = self.seq.replace(&#34;-&#34;, &#34;&#34;)
+
+    def digitize(self,alphabet=pyhmmer.easel.Alphabet.amino()):
+        &#34;&#34;&#34;Convert Seq to pyhmmer.easel.DigitalSequence.
+
+        Args:          
+          alphabet (pyhmmer.easel.Alphabet): Kind of alphabet to use.
+
+        Raises:
+            None
+
+        Return:
+            pyhmmer.easel.DigitalSequence.
+        &#34;&#34;&#34;
+        easelseq = pyhmmer.easel.TextSequence(
+            sequence=str(self.seq),
+            name=self.id.encode(),
+            description=self.description.encode()
+            )
+        return easelseq.digitize(alphabet)
+
+    def get_feature(self,feature_id=None):
+        &#34;&#34;&#34;Extract features from Seq.
+
+        Args:          
+          feature_id (str): A feature identifier, if None all features will be extracted.
+
+        Raises:
+            None
+
+        Return:
+            list of Seq objects, one per feature.
+        &#34;&#34;&#34;
+        fseq = []
+        for f in self.features:
+            keep = True            
+            if feature_id:                
+                keep = feature_id == f.id
+            if keep:
+                fseq.append(
+                    Seq(SeqRecord(seq=f.extract(self.seq),id=self.id,description=f.id))
+                )
+        return fseq
+        
+    def per_residue_annotation(self):
+        &#34;&#34;&#34;Put annotation hits under the residues (self.res) they cover [sorted by score].
+        
+        Args:
+            None
+        Raises:
+            None
+        Return:
+            None
+        &#34;&#34;&#34;
+        
+        self.res = {aa:None for aa in range(1,len(self.seq)+1 )} 
+        #hits = sorted(self.hits, key=lambda x: x.score, reverse=True)
+        self.hits.sort(key=lambda x: x.score, reverse=False)
+
+        for hit in self.hits:
+            for aa in range(hit.start_location,hit.stop_location):
+                if not self.res[aa]:
+                    self.res[aa] = []#                
+                self.res[aa].append(hit)
+                #self.res[aa].evalue.append(hit.score)   
+    
+    # def _keep_best_annotation(self):
+    #     &#34;&#34;&#34;helper function to keep only the best hit
+        
+    #     Args:
+    #         None
+    #     Raises:
+    #         None
+    #     Return:
+    #         None
+    #     &#34;&#34;&#34;
+    #     b = []
+    #     for _ , residue in self.res.items():
+    #         if residue:
+    #             b.append(residue.keep_best())
+    #         else:
+    #             b.append(&#34;-&#34;)
+    #     return b 
+
+    def addhit(self,hit):
+        &#34;&#34;&#34;Add Hit object to Seq.
+        
+        Args:
+            hit (Hit): Hit object.
+        Raises:
+            TypeError: If hit is not an instance of Hit.
+        Return:
+            None
+        &#34;&#34;&#34;
+        if not isinstance(hit,Hit):
+            raise TypeError(&#34;Except Hit object not {}&#34;.format(type(hit)))            
+        self.hits.append(hit)        
+
+
+class Sequences(SequencesIO):
+    &#34;&#34;&#34;Class to handle multiple Seq object.
+    
+    Attributes:
+        sequences (list): List of Seq object if any.         
+    &#34;&#34;&#34;   
+    def __init__(self,fasta=None,src=&#34;&#34;,**kwargs):        
+        self._sequences = self._parse_fasta(fasta,src=src) if fasta else []
+
+    @property
+    def sequences(self):
+        return self._sequences
+
+    @sequences.setter
+    def sequences(self, value:dict):
+        if isinstance(value,list):     
+            for seq in value:
+                if not isinstance(seq,Seq):
+                    raise TypeError(&#34;sequence is not a Seq object&#34;)
+            self._sequences = value
+        else:
+            raise TypeError(&#34;value must be a list of Seq object&#34;)        
+
+    def get_seq_by_id(self,sid:str):
+        &#34;&#34;&#34;Get a single sequence by its identifier.
+        
+        Args:
+            sid (str): sequence identifier.
+        Raises:
+            ValueError: If sequence identifier is not found.
+        Return:
+            Seq object
+        &#34;&#34;&#34;
+        for seq in self._sequences:
+            if seq.id == sid:
+                return seq
+        raise ValueError(&#34;can&#39;t find {}&#34;.format(sid))
+
+    def get_feature(self,feature_id=None):
+        &#34;&#34;&#34;Get features from multiple sequences.
+        
+        Args:
+            feature_id (str): A feature identifier.
+        Raises:
+            None
+        Return:
+            list of features as Seq objects.
+        &#34;&#34;&#34;        
+        features = []
+        for seq in self.sequences:
+            features+=seq.get_feature(feature_id=feature_id)
+        return features
+
+    def digitize(self,alphabet=pyhmmer.easel.Alphabet.amino()):
+        &#34;&#34;&#34;Convert all sequences to pyhmmer.easel.DigitalSequence.
+        
+        Args:
+            alphabet (pyhmmer.easel.Alphabet): Kind of alphabet to use.
+        Raises:
+            None
+        Return:
+            list of pyhmmer.easel.DigitalSequence.
+        &#34;&#34;&#34;
+        digital_records = []
+        for seq in self._sequences:     
+            digital_records.append(seq.digitize(alphabet))
+        return digital_records
+
+    def hamming_distance(self,str1, str2):
+        &#34;&#34;&#34;Compute the hamming distance between two string divided by the length of the alignment.
+        
+        Args:
+            str1 (str): First string.
+            str2 (str): Second string.
+        Raises:
+            ValueError: If str1 and str2 do not have the same length.
+        Return:
+            float
+        &#34;&#34;&#34;
+        if len(str1) != len(str2):
+            raise ValueError(&#34;Str1 and Str2 should have the same length.&#34;)
+        return sum(chr1 != chr2 for chr1, chr2 in zip(str1, str2))/len(str1)     
+
+    def hmmsearch(self,
+                    hmms:list,
+                    alphabet=pyhmmer.easel.Alphabet.amino(), 
+                    cpus=multiprocessing.cpu_count()-1, 
+                    **kwargs):
+        &#34;&#34;&#34;Search sequences against  HMM profile(s).
+        
+        Args:
+            hmms (list): List of pyhmmer.plan7.HMM profile(s).
+            alphabet (pyhmmer.easel.Alphabet): Kind of alphabet to use.
+            cpus (int): Number of cpu to use.
+        Raises:
+            AssertionError: If hmms is not a list or of an HMM is not a .
+            TypeError: If at least one profile within hmms is not a pyhmmer.plan7.HMM.
+        Return:
+            Sequences object -&gt; a new Sequences object containing sequence (Seq) with at least one hit against one or more profiles.
+        &#34;&#34;&#34;                    
+        assert isinstance(hmms,list)
+        for hmm in hmms:            
+            if not isinstance(hmm, pyhmmer.plan7.HMM):
+                raise TypeError(&#34;Except pyhmmer.plan7.HMM but received&#34;.format(type(hmm)))
+
+        hits = pyhmmer.hmmsearch(hmms,self.digitize(alphabet),cpus=cpus)
+        hmm_datas = [(h.name.decode(&#34;UTF-8&#34;),h.M)  for h in hmms]
+        seq_with_hit = []
+        for hmm_datas , hit_by_hmm in zip(hmm_datas,hits):
+            hmm_id,hmm_len=hmm_datas
+            for hit in hit_by_hmm:
+                sequence_identifier = hit.name.decode(&#34;UTF-8&#34;)
+                if sequence_identifier not in seq_with_hit:
+                    seq_with_hit.append(sequence_identifier)
+                seq = self.get_seq_by_id(sequence_identifier)
+                for dom in hit.domains:
+                    
+                    dh = Hit(
+                            hid=hmm_id,
+                            target_len=hmm_len,
+                            start_location=dom.alignment.target_from,
+                            stop_location=dom.alignment.target_to,
+                            score = dom.i_evalue, # np.format_float_scientific( val ,precision=4) ,
+                            method=&#34;hmmsearch&#34;,
+                            coverage=(dom.alignment.target_to-dom.alignment.target_from)/hmm_len,#len(seq.seq),
+                            src = hmm_id,
+                            identity = round(
+                                self.hamming_distance(dom.alignment.target_sequence.lower(),dom.alignment.hmm_sequence.lower()),2)                            
+                        )
+                    seq.addhit(dh)
+
+
+        sequences_with_hit = Sequences()
+        sequences_with_hit.sequences = [self.get_seq_by_id(sid) for sid in seq_with_hit]
+        return sequences_with_hit
+
+
+    def blastp(self,blast_subject_fasta,evalue=1e-4,outfmt=&#34;10 std slen&#34;):   
+        &#34;&#34;&#34;Perform a sequence vs sequence blastp search and append \ 
+        resulting hits to the hits attribute of their respective sequence.
+        
+        Args:
+            blast_subject_fasta (str): path to another fasta file.
+            evalue (float): E-value threshold.
+            outfmt (str): blast output format.
+        Raises:
+            OSError: If blastp command is not found.
+            TypeError: If at least one profile within hmms is not a pyhmmer.plan7.HMM.
+        Return:
+            None
+        &#34;&#34;&#34;  
+        blastpexec = which(&#39;blastp&#39;)
+        if blastpexec is None:
+            #logging.critical(&#34;blastp command not found...&#34;)
+            raise OSError(&#34;blastp command not found...&#34;)
+        query = tempfile.NamedTemporaryFile(mode=&#34;w+&#34;)
+        self.to_fasta(query)
+        query.flush()
+        if blastpexec:            
+            command = [
+                    blastpexec,
+                    &#34;-query&#34; , query.name,
+                    &#34;-subject&#34;, blast_subject_fasta,
+                    &#34;-evalue&#34; , str(evalue),
+                    &#34;-outfmt&#34; , &#39;&#34;10 std slen&#34;&#39;                    
+                ]
+
+        o = subprocess.run(&#34; &#34;.join(command) , capture_output=True , shell=True)         
+        res = o.stdout.decode(&#39;ascii&#39;).strip()
+
+        if res:
+            df = pd.read_table( StringIO(res)  , sep=&#34;,&#34;  , header=None )          
+            df.columns = &#34;qacc sacc pident length mismatch gapopen qstart qend sstart send evalue bitscore slen&#34;.split(&#34; &#34;)
+            df.sort_values(&#34;pident&#34;,inplace=True,ascending=False)    
+            df.set_index(&#34;qacc&#34;,inplace=True)
+            df[&#34;coverage&#34;] = df.apply(lambda x: (x.send-x.sstart) / x.slen * 100, axis=1 )
+            for _ , blastp_hit in df.iterrows():
+                dh = Hit(
+                        hid=blastp_hit.sacc,
+                        target_len=blastp_hit.slen,
+                        start_location=blastp_hit.sstart,
+                        stop_location=blastp_hit.send,
+                        score = blastp_hit.evalue,
+                        method=&#34;blastp&#34;,
+                        coverage=(blastp_hit.send-blastp_hit.sstart)/blastp_hit.slen ,
+                        src = blastp_hit.sacc,
+                        identity = blastp_hit.pident
+                    )
+                self.get_seq_by_id(_).addhit(dh)
+
+    def to_feature_table(self,add_sequence=True,feature_id=&#34;&#34;):
+        &#34;&#34;&#34;Generate a feature table.
+        
+        Args:
+            add_sequence (bool): If set, the feature sequence (str) will be append to the table.
+            feature_id (str): If set, only feature with the same identifier will be considered.            
+        Raises:
+            None
+        Return:
+            pd.DataFrame
+        &#34;&#34;&#34;          
+        features = []
+        for seq in self.sequences:
+            for feature in seq.features:
+                keep=True
+                if feature_id:
+                    if feature_id!=feature.id:
+                        keep=False
+                if keep:
+                    f = [
+                        seq.id,
+                        seq.src,
+                        feature.type,
+                        feature.location.start,
+                        feature.location.end,
+                        feature.id,
+                        feature.qualifiers[&#34;identity&#34;],
+                        feature.qualifiers[&#34;score&#34;],
+                        feature.qualifiers[&#34;src&#34;],
+                        feature.qualifiers[&#34;src_len&#34;]
+                    ]
+                    if add_sequence:                    
+                        f.append(
+                            str(feature.extract(seq.seq))
+                        )
+                    features.append(f)
+        return pd.DataFrame(features,columns=[
+            &#34;sequence_id&#34;,&#34;sequence_src&#34;,&#34;feature_type&#34;,&#34;feature_start&#34;,&#34;feature_end&#34;,
+            &#34;feature_id&#34;,&#34;pident&#34;,&#34;e-value&#34;,&#34;feature_src&#34;,&#34;feature_target_len&#34;,&#34;feature_seq&#34;
+        ]).set_index(&#34;sequence_id&#34;)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="pycalf.core.Sequences.Hit"><code class="flex name class">
+<span>class <span class="ident">Hit</span></span>
+<span>(</span><span>hid='', target_len: int = 0, start_location: int = 0, stop_location: int = 0, score: float = 0, identity: float = 0, coverage: float = 0, method: str = '', src: str = '')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class to store scores and location of features.</p>
+<h2 id="attributes">Attributes</h2>
+<dl>
+<dt><strong><code>hid</code></strong> :&ensp;<code>str</code></dt>
+<dd>Name of the hit.</dd>
+<dt><strong><code>target_len</code></strong> :&ensp;<code>int</code></dt>
+<dd>Length of the target.</dd>
+<dt><strong><code>start_location</code></strong> :&ensp;<code>int</code></dt>
+<dd>Start location.</dd>
+<dt><strong><code>stop_location</code></strong> :&ensp;<code>int</code></dt>
+<dd>Stop location.</dd>
+<dt><strong><code>score</code></strong> :&ensp;<code>float</code></dt>
+<dd>E-value.</dd>
+<dt><strong><code>identity</code></strong> :&ensp;<code>float</code></dt>
+<dd>Percentage of identity.</dd>
+<dt><strong><code>coverage</code></strong> :&ensp;<code>float</code></dt>
+<dd>Coverage.</dd>
+<dt><strong><code>method</code></strong> :&ensp;<code>str</code></dt>
+<dd>Method use to produced the hit.</dd>
+<dt><strong><code>src</code></strong> :&ensp;<code>str</code></dt>
+<dd>Additional information about the origin of the hit.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Hit:
+    &#34;&#34;&#34;Class to store scores and location of features.
+    
+    Attributes:
+        hid (str): Name of the hit.
+        target_len (int): Length of the target.
+        start_location (int): Start location.
+        stop_location (int): Stop location.
+        score (float): E-value.
+        identity (float): Percentage of identity.
+        coverage (float): Coverage.
+        method (str): Method use to produced the hit.
+        src (str): Additional information about the origin of the hit.
+    &#34;&#34;&#34;
+    def __init__(self,        
+        hid=&#34;&#34;,
+        target_len:int=0,
+        start_location:int=0,
+        stop_location:int=0,
+        score:float=0,
+        identity:float=0,
+        coverage:float=0,
+        method:str=&#34;&#34;,
+        src:str=&#34;&#34;,
+        ):
+        
+        self.hid = hid
+        self.target_len=target_len
+        self.start_location = start_location
+        self.stop_location = stop_location
+        self.score = score
+        self.identity=identity
+        self.coverage = round(coverage,2) if coverage else coverage
+        self.method = method
+        self.src = src</code></pre>
+</details>
+</dd>
+<dt id="pycalf.core.Sequences.Seq"><code class="flex name class">
+<span>class <span class="ident">Seq</span></span>
+<span>(</span><span>seqrecord, src=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Seq object extend the SeqRecord class from biopython</p>
+<h2 id="attributes">Attributes</h2>
+<dl>
+<dt><strong><code>hits</code></strong> :&ensp;<code>list</code></dt>
+<dd>List of Hit object if any. </dd>
+<dt><strong><code>res</code></strong> :&ensp;<code>dict</code></dt>
+<dd>Dictionnary with residue as key.</dd>
+</dl>
+<p>Create a SeqRecord.</p>
+<p>Arguments:
+- seq
+- Sequence, required (Seq or MutableSeq)
+- id
+- Sequence identifier, recommended (string)
+- name
+- Sequence name, optional (string)
+- description - Sequence description, optional (string)
+- dbxrefs
+- Database cross references, optional (list of strings)
+- features
+- Any (sub)features, optional (list of SeqFeature objects)
+- annotations - Dictionary of annotations for the whole sequence
+- letter_annotations - Dictionary of per-letter-annotations, values
+should be strings, list or tuples of the same length as the full
+sequence.</p>
+<p>You will typically use Bio.SeqIO to read in sequences from files as
+SeqRecord objects.
+However, you may want to create your own SeqRecord
+objects directly.</p>
+<p>Note that while an id is optional, we strongly recommend you supply a
+unique id string for each record.
+This is especially important
+if you wish to write your sequences to a file.</p>
+<p>You can create a 'blank' SeqRecord object, and then populate the
+attributes later.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Seq(SeqRecord):  
+    &#34;&#34;&#34;Seq object extend the SeqRecord class from biopython
+    
+    Attributes:
+        hits (list): List of Hit object if any. 
+        res (dict): Dictionnary with residue as key.
+    &#34;&#34;&#34;   
+
+    def __init__(self,seqrecord,src=None):      
+        SeqRecord.__init__(self,seq=seqrecord.seq)
+        self.id = seqrecord.id
+        self.name= seqrecord.name        
+        self.description = seqrecord.description
+        self.src = src       
+        self.hits = []
+        self.res = {}
+        self.sanitize_record()
+
+    def sanitize_record(self):
+        &#34;&#34;&#34;Remove gap character from sequence if any (inplace).
+        
+        Args:          
+            None
+
+        Raises:
+            None
+
+        Return:
+            None
+        &#34;&#34;&#34;
+        if self.seq:
+            self.seq = self.seq.replace(&#34;-&#34;, &#34;&#34;)
+
+    def digitize(self,alphabet=pyhmmer.easel.Alphabet.amino()):
+        &#34;&#34;&#34;Convert Seq to pyhmmer.easel.DigitalSequence.
+
+        Args:          
+          alphabet (pyhmmer.easel.Alphabet): Kind of alphabet to use.
+
+        Raises:
+            None
+
+        Return:
+            pyhmmer.easel.DigitalSequence.
+        &#34;&#34;&#34;
+        easelseq = pyhmmer.easel.TextSequence(
+            sequence=str(self.seq),
+            name=self.id.encode(),
+            description=self.description.encode()
+            )
+        return easelseq.digitize(alphabet)
+
+    def get_feature(self,feature_id=None):
+        &#34;&#34;&#34;Extract features from Seq.
+
+        Args:          
+          feature_id (str): A feature identifier, if None all features will be extracted.
+
+        Raises:
+            None
+
+        Return:
+            list of Seq objects, one per feature.
+        &#34;&#34;&#34;
+        fseq = []
+        for f in self.features:
+            keep = True            
+            if feature_id:                
+                keep = feature_id == f.id
+            if keep:
+                fseq.append(
+                    Seq(SeqRecord(seq=f.extract(self.seq),id=self.id,description=f.id))
+                )
+        return fseq
+        
+    def per_residue_annotation(self):
+        &#34;&#34;&#34;Put annotation hits under the residues (self.res) they cover [sorted by score].
+        
+        Args:
+            None
+        Raises:
+            None
+        Return:
+            None
+        &#34;&#34;&#34;
+        
+        self.res = {aa:None for aa in range(1,len(self.seq)+1 )} 
+        #hits = sorted(self.hits, key=lambda x: x.score, reverse=True)
+        self.hits.sort(key=lambda x: x.score, reverse=False)
+
+        for hit in self.hits:
+            for aa in range(hit.start_location,hit.stop_location):
+                if not self.res[aa]:
+                    self.res[aa] = []#                
+                self.res[aa].append(hit)
+                #self.res[aa].evalue.append(hit.score)   
+    
+    # def _keep_best_annotation(self):
+    #     &#34;&#34;&#34;helper function to keep only the best hit
+        
+    #     Args:
+    #         None
+    #     Raises:
+    #         None
+    #     Return:
+    #         None
+    #     &#34;&#34;&#34;
+    #     b = []
+    #     for _ , residue in self.res.items():
+    #         if residue:
+    #             b.append(residue.keep_best())
+    #         else:
+    #             b.append(&#34;-&#34;)
+    #     return b 
+
+    def addhit(self,hit):
+        &#34;&#34;&#34;Add Hit object to Seq.
+        
+        Args:
+            hit (Hit): Hit object.
+        Raises:
+            TypeError: If hit is not an instance of Hit.
+        Return:
+            None
+        &#34;&#34;&#34;
+        if not isinstance(hit,Hit):
+            raise TypeError(&#34;Except Hit object not {}&#34;.format(type(hit)))            
+        self.hits.append(hit)        </code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>Bio.SeqRecord.SeqRecord</li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pycalf.core.Sequences.Seq.addhit"><code class="name flex">
+<span>def <span class="ident">addhit</span></span>(<span>self, hit)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Add Hit object to Seq.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>hit</code></strong> :&ensp;<code><a title="pycalf.core.Sequences.Hit" href="#pycalf.core.Sequences.Hit">Hit</a></code></dt>
+<dd>Hit object.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>TypeError</code></dt>
+<dd>If hit is not an instance of Hit.</dd>
+</dl>
+<h2 id="return">Return</h2>
+<p>None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def addhit(self,hit):
+    &#34;&#34;&#34;Add Hit object to Seq.
+    
+    Args:
+        hit (Hit): Hit object.
+    Raises:
+        TypeError: If hit is not an instance of Hit.
+    Return:
+        None
+    &#34;&#34;&#34;
+    if not isinstance(hit,Hit):
+        raise TypeError(&#34;Except Hit object not {}&#34;.format(type(hit)))            
+    self.hits.append(hit)        </code></pre>
+</details>
+</dd>
+<dt id="pycalf.core.Sequences.Seq.digitize"><code class="name flex">
+<span>def <span class="ident">digitize</span></span>(<span>self, alphabet=pyhmmer.easel.Alphabet.amino())</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Convert Seq to pyhmmer.easel.DigitalSequence.</p>
+<p>Args:
+<br>
+alphabet (pyhmmer.easel.Alphabet): Kind of alphabet to use.</p>
+<h2 id="raises">Raises</h2>
+<p>None</p>
+<h2 id="return">Return</h2>
+<p>pyhmmer.easel.DigitalSequence.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def digitize(self,alphabet=pyhmmer.easel.Alphabet.amino()):
+    &#34;&#34;&#34;Convert Seq to pyhmmer.easel.DigitalSequence.
+
+    Args:          
+      alphabet (pyhmmer.easel.Alphabet): Kind of alphabet to use.
+
+    Raises:
+        None
+
+    Return:
+        pyhmmer.easel.DigitalSequence.
+    &#34;&#34;&#34;
+    easelseq = pyhmmer.easel.TextSequence(
+        sequence=str(self.seq),
+        name=self.id.encode(),
+        description=self.description.encode()
+        )
+    return easelseq.digitize(alphabet)</code></pre>
+</details>
+</dd>
+<dt id="pycalf.core.Sequences.Seq.get_feature"><code class="name flex">
+<span>def <span class="ident">get_feature</span></span>(<span>self, feature_id=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Extract features from Seq.</p>
+<p>Args:
+<br>
+feature_id (str): A feature identifier, if None all features will be extracted.</p>
+<h2 id="raises">Raises</h2>
+<p>None</p>
+<h2 id="return">Return</h2>
+<p>list of Seq objects, one per feature.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_feature(self,feature_id=None):
+    &#34;&#34;&#34;Extract features from Seq.
+
+    Args:          
+      feature_id (str): A feature identifier, if None all features will be extracted.
+
+    Raises:
+        None
+
+    Return:
+        list of Seq objects, one per feature.
+    &#34;&#34;&#34;
+    fseq = []
+    for f in self.features:
+        keep = True            
+        if feature_id:                
+            keep = feature_id == f.id
+        if keep:
+            fseq.append(
+                Seq(SeqRecord(seq=f.extract(self.seq),id=self.id,description=f.id))
+            )
+    return fseq</code></pre>
+</details>
+</dd>
+<dt id="pycalf.core.Sequences.Seq.per_residue_annotation"><code class="name flex">
+<span>def <span class="ident">per_residue_annotation</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Put annotation hits under the residues (self.res) they cover [sorted by score].</p>
+<h2 id="args">Args</h2>
+<p>None</p>
+<h2 id="raises">Raises</h2>
+<p>None</p>
+<h2 id="return">Return</h2>
+<p>None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def per_residue_annotation(self):
+    &#34;&#34;&#34;Put annotation hits under the residues (self.res) they cover [sorted by score].
+    
+    Args:
+        None
+    Raises:
+        None
+    Return:
+        None
+    &#34;&#34;&#34;
+    
+    self.res = {aa:None for aa in range(1,len(self.seq)+1 )} 
+    #hits = sorted(self.hits, key=lambda x: x.score, reverse=True)
+    self.hits.sort(key=lambda x: x.score, reverse=False)
+
+    for hit in self.hits:
+        for aa in range(hit.start_location,hit.stop_location):
+            if not self.res[aa]:
+                self.res[aa] = []#                
+            self.res[aa].append(hit)
+            #self.res[aa].evalue.append(hit.score)   </code></pre>
+</details>
+</dd>
+<dt id="pycalf.core.Sequences.Seq.sanitize_record"><code class="name flex">
+<span>def <span class="ident">sanitize_record</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Remove gap character from sequence if any (inplace).</p>
+<p>Args:
+<br>
+None</p>
+<h2 id="raises">Raises</h2>
+<p>None</p>
+<h2 id="return">Return</h2>
+<p>None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sanitize_record(self):
+    &#34;&#34;&#34;Remove gap character from sequence if any (inplace).
+    
+    Args:          
+        None
+
+    Raises:
+        None
+
+    Return:
+        None
+    &#34;&#34;&#34;
+    if self.seq:
+        self.seq = self.seq.replace(&#34;-&#34;, &#34;&#34;)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+<dt id="pycalf.core.Sequences.Sequences"><code class="flex name class">
+<span>class <span class="ident">Sequences</span></span>
+<span>(</span><span>fasta=None, src='', **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class to handle multiple Seq object.</p>
+<h2 id="attributes">Attributes</h2>
+<dl>
+<dt><strong><code>sequences</code></strong> :&ensp;<code>list</code></dt>
+<dd>List of Seq object if any.</dd>
+</dl></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class Sequences(SequencesIO):
+    &#34;&#34;&#34;Class to handle multiple Seq object.
+    
+    Attributes:
+        sequences (list): List of Seq object if any.         
+    &#34;&#34;&#34;   
+    def __init__(self,fasta=None,src=&#34;&#34;,**kwargs):        
+        self._sequences = self._parse_fasta(fasta,src=src) if fasta else []
+
+    @property
+    def sequences(self):
+        return self._sequences
+
+    @sequences.setter
+    def sequences(self, value:dict):
+        if isinstance(value,list):     
+            for seq in value:
+                if not isinstance(seq,Seq):
+                    raise TypeError(&#34;sequence is not a Seq object&#34;)
+            self._sequences = value
+        else:
+            raise TypeError(&#34;value must be a list of Seq object&#34;)        
+
+    def get_seq_by_id(self,sid:str):
+        &#34;&#34;&#34;Get a single sequence by its identifier.
+        
+        Args:
+            sid (str): sequence identifier.
+        Raises:
+            ValueError: If sequence identifier is not found.
+        Return:
+            Seq object
+        &#34;&#34;&#34;
+        for seq in self._sequences:
+            if seq.id == sid:
+                return seq
+        raise ValueError(&#34;can&#39;t find {}&#34;.format(sid))
+
+    def get_feature(self,feature_id=None):
+        &#34;&#34;&#34;Get features from multiple sequences.
+        
+        Args:
+            feature_id (str): A feature identifier.
+        Raises:
+            None
+        Return:
+            list of features as Seq objects.
+        &#34;&#34;&#34;        
+        features = []
+        for seq in self.sequences:
+            features+=seq.get_feature(feature_id=feature_id)
+        return features
+
+    def digitize(self,alphabet=pyhmmer.easel.Alphabet.amino()):
+        &#34;&#34;&#34;Convert all sequences to pyhmmer.easel.DigitalSequence.
+        
+        Args:
+            alphabet (pyhmmer.easel.Alphabet): Kind of alphabet to use.
+        Raises:
+            None
+        Return:
+            list of pyhmmer.easel.DigitalSequence.
+        &#34;&#34;&#34;
+        digital_records = []
+        for seq in self._sequences:     
+            digital_records.append(seq.digitize(alphabet))
+        return digital_records
+
+    def hamming_distance(self,str1, str2):
+        &#34;&#34;&#34;Compute the hamming distance between two string divided by the length of the alignment.
+        
+        Args:
+            str1 (str): First string.
+            str2 (str): Second string.
+        Raises:
+            ValueError: If str1 and str2 do not have the same length.
+        Return:
+            float
+        &#34;&#34;&#34;
+        if len(str1) != len(str2):
+            raise ValueError(&#34;Str1 and Str2 should have the same length.&#34;)
+        return sum(chr1 != chr2 for chr1, chr2 in zip(str1, str2))/len(str1)     
+
+    def hmmsearch(self,
+                    hmms:list,
+                    alphabet=pyhmmer.easel.Alphabet.amino(), 
+                    cpus=multiprocessing.cpu_count()-1, 
+                    **kwargs):
+        &#34;&#34;&#34;Search sequences against  HMM profile(s).
+        
+        Args:
+            hmms (list): List of pyhmmer.plan7.HMM profile(s).
+            alphabet (pyhmmer.easel.Alphabet): Kind of alphabet to use.
+            cpus (int): Number of cpu to use.
+        Raises:
+            AssertionError: If hmms is not a list or of an HMM is not a .
+            TypeError: If at least one profile within hmms is not a pyhmmer.plan7.HMM.
+        Return:
+            Sequences object -&gt; a new Sequences object containing sequence (Seq) with at least one hit against one or more profiles.
+        &#34;&#34;&#34;                    
+        assert isinstance(hmms,list)
+        for hmm in hmms:            
+            if not isinstance(hmm, pyhmmer.plan7.HMM):
+                raise TypeError(&#34;Except pyhmmer.plan7.HMM but received&#34;.format(type(hmm)))
+
+        hits = pyhmmer.hmmsearch(hmms,self.digitize(alphabet),cpus=cpus)
+        hmm_datas = [(h.name.decode(&#34;UTF-8&#34;),h.M)  for h in hmms]
+        seq_with_hit = []
+        for hmm_datas , hit_by_hmm in zip(hmm_datas,hits):
+            hmm_id,hmm_len=hmm_datas
+            for hit in hit_by_hmm:
+                sequence_identifier = hit.name.decode(&#34;UTF-8&#34;)
+                if sequence_identifier not in seq_with_hit:
+                    seq_with_hit.append(sequence_identifier)
+                seq = self.get_seq_by_id(sequence_identifier)
+                for dom in hit.domains:
+                    
+                    dh = Hit(
+                            hid=hmm_id,
+                            target_len=hmm_len,
+                            start_location=dom.alignment.target_from,
+                            stop_location=dom.alignment.target_to,
+                            score = dom.i_evalue, # np.format_float_scientific( val ,precision=4) ,
+                            method=&#34;hmmsearch&#34;,
+                            coverage=(dom.alignment.target_to-dom.alignment.target_from)/hmm_len,#len(seq.seq),
+                            src = hmm_id,
+                            identity = round(
+                                self.hamming_distance(dom.alignment.target_sequence.lower(),dom.alignment.hmm_sequence.lower()),2)                            
+                        )
+                    seq.addhit(dh)
+
+
+        sequences_with_hit = Sequences()
+        sequences_with_hit.sequences = [self.get_seq_by_id(sid) for sid in seq_with_hit]
+        return sequences_with_hit
+
+
+    def blastp(self,blast_subject_fasta,evalue=1e-4,outfmt=&#34;10 std slen&#34;):   
+        &#34;&#34;&#34;Perform a sequence vs sequence blastp search and append \ 
+        resulting hits to the hits attribute of their respective sequence.
+        
+        Args:
+            blast_subject_fasta (str): path to another fasta file.
+            evalue (float): E-value threshold.
+            outfmt (str): blast output format.
+        Raises:
+            OSError: If blastp command is not found.
+            TypeError: If at least one profile within hmms is not a pyhmmer.plan7.HMM.
+        Return:
+            None
+        &#34;&#34;&#34;  
+        blastpexec = which(&#39;blastp&#39;)
+        if blastpexec is None:
+            #logging.critical(&#34;blastp command not found...&#34;)
+            raise OSError(&#34;blastp command not found...&#34;)
+        query = tempfile.NamedTemporaryFile(mode=&#34;w+&#34;)
+        self.to_fasta(query)
+        query.flush()
+        if blastpexec:            
+            command = [
+                    blastpexec,
+                    &#34;-query&#34; , query.name,
+                    &#34;-subject&#34;, blast_subject_fasta,
+                    &#34;-evalue&#34; , str(evalue),
+                    &#34;-outfmt&#34; , &#39;&#34;10 std slen&#34;&#39;                    
+                ]
+
+        o = subprocess.run(&#34; &#34;.join(command) , capture_output=True , shell=True)         
+        res = o.stdout.decode(&#39;ascii&#39;).strip()
+
+        if res:
+            df = pd.read_table( StringIO(res)  , sep=&#34;,&#34;  , header=None )          
+            df.columns = &#34;qacc sacc pident length mismatch gapopen qstart qend sstart send evalue bitscore slen&#34;.split(&#34; &#34;)
+            df.sort_values(&#34;pident&#34;,inplace=True,ascending=False)    
+            df.set_index(&#34;qacc&#34;,inplace=True)
+            df[&#34;coverage&#34;] = df.apply(lambda x: (x.send-x.sstart) / x.slen * 100, axis=1 )
+            for _ , blastp_hit in df.iterrows():
+                dh = Hit(
+                        hid=blastp_hit.sacc,
+                        target_len=blastp_hit.slen,
+                        start_location=blastp_hit.sstart,
+                        stop_location=blastp_hit.send,
+                        score = blastp_hit.evalue,
+                        method=&#34;blastp&#34;,
+                        coverage=(blastp_hit.send-blastp_hit.sstart)/blastp_hit.slen ,
+                        src = blastp_hit.sacc,
+                        identity = blastp_hit.pident
+                    )
+                self.get_seq_by_id(_).addhit(dh)
+
+    def to_feature_table(self,add_sequence=True,feature_id=&#34;&#34;):
+        &#34;&#34;&#34;Generate a feature table.
+        
+        Args:
+            add_sequence (bool): If set, the feature sequence (str) will be append to the table.
+            feature_id (str): If set, only feature with the same identifier will be considered.            
+        Raises:
+            None
+        Return:
+            pd.DataFrame
+        &#34;&#34;&#34;          
+        features = []
+        for seq in self.sequences:
+            for feature in seq.features:
+                keep=True
+                if feature_id:
+                    if feature_id!=feature.id:
+                        keep=False
+                if keep:
+                    f = [
+                        seq.id,
+                        seq.src,
+                        feature.type,
+                        feature.location.start,
+                        feature.location.end,
+                        feature.id,
+                        feature.qualifiers[&#34;identity&#34;],
+                        feature.qualifiers[&#34;score&#34;],
+                        feature.qualifiers[&#34;src&#34;],
+                        feature.qualifiers[&#34;src_len&#34;]
+                    ]
+                    if add_sequence:                    
+                        f.append(
+                            str(feature.extract(seq.seq))
+                        )
+                    features.append(f)
+        return pd.DataFrame(features,columns=[
+            &#34;sequence_id&#34;,&#34;sequence_src&#34;,&#34;feature_type&#34;,&#34;feature_start&#34;,&#34;feature_end&#34;,
+            &#34;feature_id&#34;,&#34;pident&#34;,&#34;e-value&#34;,&#34;feature_src&#34;,&#34;feature_target_len&#34;,&#34;feature_seq&#34;
+        ]).set_index(&#34;sequence_id&#34;)</code></pre>
+</details>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="pycalf.core.Sequences.SequencesIO" href="#pycalf.core.Sequences.SequencesIO">SequencesIO</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="pycalf.core.Sequences.Sequences.sequences"><code class="name">var <span class="ident">sequences</span></code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@property
+def sequences(self):
+    return self._sequences</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="pycalf.core.Sequences.Sequences.blastp"><code class="name flex">
+<span>def <span class="ident">blastp</span></span>(<span>self, blast_subject_fasta, evalue=0.0001, outfmt='10 std slen')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Perform a sequence vs sequence blastp search and append \
+resulting hits to the hits attribute of their respective sequence.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>blast_subject_fasta</code></strong> :&ensp;<code>str</code></dt>
+<dd>path to another fasta file.</dd>
+<dt><strong><code>evalue</code></strong> :&ensp;<code>float</code></dt>
+<dd>E-value threshold.</dd>
+<dt><strong><code>outfmt</code></strong> :&ensp;<code>str</code></dt>
+<dd>blast output format.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>OSError</code></dt>
+<dd>If blastp command is not found.</dd>
+<dt><code>TypeError</code></dt>
+<dd>If at least one profile within hmms is not a pyhmmer.plan7.HMM.</dd>
+</dl>
+<h2 id="return">Return</h2>
+<p>None</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def blastp(self,blast_subject_fasta,evalue=1e-4,outfmt=&#34;10 std slen&#34;):   
+    &#34;&#34;&#34;Perform a sequence vs sequence blastp search and append \ 
+    resulting hits to the hits attribute of their respective sequence.
+    
+    Args:
+        blast_subject_fasta (str): path to another fasta file.
+        evalue (float): E-value threshold.
+        outfmt (str): blast output format.
+    Raises:
+        OSError: If blastp command is not found.
+        TypeError: If at least one profile within hmms is not a pyhmmer.plan7.HMM.
+    Return:
+        None
+    &#34;&#34;&#34;  
+    blastpexec = which(&#39;blastp&#39;)
+    if blastpexec is None:
+        #logging.critical(&#34;blastp command not found...&#34;)
+        raise OSError(&#34;blastp command not found...&#34;)
+    query = tempfile.NamedTemporaryFile(mode=&#34;w+&#34;)
+    self.to_fasta(query)
+    query.flush()
+    if blastpexec:            
+        command = [
+                blastpexec,
+                &#34;-query&#34; , query.name,
+                &#34;-subject&#34;, blast_subject_fasta,
+                &#34;-evalue&#34; , str(evalue),
+                &#34;-outfmt&#34; , &#39;&#34;10 std slen&#34;&#39;                    
+            ]
+
+    o = subprocess.run(&#34; &#34;.join(command) , capture_output=True , shell=True)         
+    res = o.stdout.decode(&#39;ascii&#39;).strip()
+
+    if res:
+        df = pd.read_table( StringIO(res)  , sep=&#34;,&#34;  , header=None )          
+        df.columns = &#34;qacc sacc pident length mismatch gapopen qstart qend sstart send evalue bitscore slen&#34;.split(&#34; &#34;)
+        df.sort_values(&#34;pident&#34;,inplace=True,ascending=False)    
+        df.set_index(&#34;qacc&#34;,inplace=True)
+        df[&#34;coverage&#34;] = df.apply(lambda x: (x.send-x.sstart) / x.slen * 100, axis=1 )
+        for _ , blastp_hit in df.iterrows():
+            dh = Hit(
+                    hid=blastp_hit.sacc,
+                    target_len=blastp_hit.slen,
+                    start_location=blastp_hit.sstart,
+                    stop_location=blastp_hit.send,
+                    score = blastp_hit.evalue,
+                    method=&#34;blastp&#34;,
+                    coverage=(blastp_hit.send-blastp_hit.sstart)/blastp_hit.slen ,
+                    src = blastp_hit.sacc,
+                    identity = blastp_hit.pident
+                )
+            self.get_seq_by_id(_).addhit(dh)</code></pre>
+</details>
+</dd>
+<dt id="pycalf.core.Sequences.Sequences.digitize"><code class="name flex">
+<span>def <span class="ident">digitize</span></span>(<span>self, alphabet=pyhmmer.easel.Alphabet.amino())</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Convert all sequences to pyhmmer.easel.DigitalSequence.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>alphabet</code></strong> :&ensp;<code>pyhmmer.easel.Alphabet</code></dt>
+<dd>Kind of alphabet to use.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<p>None</p>
+<h2 id="return">Return</h2>
+<p>list of pyhmmer.easel.DigitalSequence.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def digitize(self,alphabet=pyhmmer.easel.Alphabet.amino()):
+    &#34;&#34;&#34;Convert all sequences to pyhmmer.easel.DigitalSequence.
+    
+    Args:
+        alphabet (pyhmmer.easel.Alphabet): Kind of alphabet to use.
+    Raises:
+        None
+    Return:
+        list of pyhmmer.easel.DigitalSequence.
+    &#34;&#34;&#34;
+    digital_records = []
+    for seq in self._sequences:     
+        digital_records.append(seq.digitize(alphabet))
+    return digital_records</code></pre>
+</details>
+</dd>
+<dt id="pycalf.core.Sequences.Sequences.get_feature"><code class="name flex">
+<span>def <span class="ident">get_feature</span></span>(<span>self, feature_id=None)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get features from multiple sequences.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>feature_id</code></strong> :&ensp;<code>str</code></dt>
+<dd>A feature identifier.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<p>None</p>
+<h2 id="return">Return</h2>
+<p>list of features as Seq objects.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_feature(self,feature_id=None):
+    &#34;&#34;&#34;Get features from multiple sequences.
+    
+    Args:
+        feature_id (str): A feature identifier.
+    Raises:
+        None
+    Return:
+        list of features as Seq objects.
+    &#34;&#34;&#34;        
+    features = []
+    for seq in self.sequences:
+        features+=seq.get_feature(feature_id=feature_id)
+    return features</code></pre>
+</details>
+</dd>
+<dt id="pycalf.core.Sequences.Sequences.get_seq_by_id"><code class="name flex">
+<span>def <span class="ident">get_seq_by_id</span></span>(<span>self, sid: str)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get a single sequence by its identifier.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>sid</code></strong> :&ensp;<code>str</code></dt>
+<dd>sequence identifier.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If sequence identifier is not found.</dd>
+</dl>
+<h2 id="return">Return</h2>
+<p>Seq object</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_seq_by_id(self,sid:str):
+    &#34;&#34;&#34;Get a single sequence by its identifier.
+    
+    Args:
+        sid (str): sequence identifier.
+    Raises:
+        ValueError: If sequence identifier is not found.
+    Return:
+        Seq object
+    &#34;&#34;&#34;
+    for seq in self._sequences:
+        if seq.id == sid:
+            return seq
+    raise ValueError(&#34;can&#39;t find {}&#34;.format(sid))</code></pre>
+</details>
+</dd>
+<dt id="pycalf.core.Sequences.Sequences.hamming_distance"><code class="name flex">
+<span>def <span class="ident">hamming_distance</span></span>(<span>self, str1, str2)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Compute the hamming distance between two string divided by the length of the alignment.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>str1</code></strong> :&ensp;<code>str</code></dt>
+<dd>First string.</dd>
+<dt><strong><code>str2</code></strong> :&ensp;<code>str</code></dt>
+<dd>Second string.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>ValueError</code></dt>
+<dd>If str1 and str2 do not have the same length.</dd>
+</dl>
+<h2 id="return">Return</h2>
+<p>float</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def hamming_distance(self,str1, str2):
+    &#34;&#34;&#34;Compute the hamming distance between two string divided by the length of the alignment.
+    
+    Args:
+        str1 (str): First string.
+        str2 (str): Second string.
+    Raises:
+        ValueError: If str1 and str2 do not have the same length.
+    Return:
+        float
+    &#34;&#34;&#34;
+    if len(str1) != len(str2):
+        raise ValueError(&#34;Str1 and Str2 should have the same length.&#34;)
+    return sum(chr1 != chr2 for chr1, chr2 in zip(str1, str2))/len(str1)     </code></pre>
+</details>
+</dd>
+<dt id="pycalf.core.Sequences.Sequences.hmmsearch"><code class="name flex">
+<span>def <span class="ident">hmmsearch</span></span>(<span>self, hmms: list, alphabet=pyhmmer.easel.Alphabet.amino(), cpus=3, **kwargs)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Search sequences against
+HMM profile(s).</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>hmms</code></strong> :&ensp;<code>list</code></dt>
+<dd>List of pyhmmer.plan7.HMM profile(s).</dd>
+<dt><strong><code>alphabet</code></strong> :&ensp;<code>pyhmmer.easel.Alphabet</code></dt>
+<dd>Kind of alphabet to use.</dd>
+<dt><strong><code>cpus</code></strong> :&ensp;<code>int</code></dt>
+<dd>Number of cpu to use.</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<dl>
+<dt><code>AssertionError</code></dt>
+<dd>If hmms is not a list or of an HMM is not a .</dd>
+<dt><code>TypeError</code></dt>
+<dd>If at least one profile within hmms is not a pyhmmer.plan7.HMM.</dd>
+</dl>
+<h2 id="return">Return</h2>
+<p>Sequences object -&gt; a new Sequences object containing sequence (Seq) with at least one hit against one or more profiles.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def hmmsearch(self,
+                hmms:list,
+                alphabet=pyhmmer.easel.Alphabet.amino(), 
+                cpus=multiprocessing.cpu_count()-1, 
+                **kwargs):
+    &#34;&#34;&#34;Search sequences against  HMM profile(s).
+    
+    Args:
+        hmms (list): List of pyhmmer.plan7.HMM profile(s).
+        alphabet (pyhmmer.easel.Alphabet): Kind of alphabet to use.
+        cpus (int): Number of cpu to use.
+    Raises:
+        AssertionError: If hmms is not a list or of an HMM is not a .
+        TypeError: If at least one profile within hmms is not a pyhmmer.plan7.HMM.
+    Return:
+        Sequences object -&gt; a new Sequences object containing sequence (Seq) with at least one hit against one or more profiles.
+    &#34;&#34;&#34;                    
+    assert isinstance(hmms,list)
+    for hmm in hmms:            
+        if not isinstance(hmm, pyhmmer.plan7.HMM):
+            raise TypeError(&#34;Except pyhmmer.plan7.HMM but received&#34;.format(type(hmm)))
+
+    hits = pyhmmer.hmmsearch(hmms,self.digitize(alphabet),cpus=cpus)
+    hmm_datas = [(h.name.decode(&#34;UTF-8&#34;),h.M)  for h in hmms]
+    seq_with_hit = []
+    for hmm_datas , hit_by_hmm in zip(hmm_datas,hits):
+        hmm_id,hmm_len=hmm_datas
+        for hit in hit_by_hmm:
+            sequence_identifier = hit.name.decode(&#34;UTF-8&#34;)
+            if sequence_identifier not in seq_with_hit:
+                seq_with_hit.append(sequence_identifier)
+            seq = self.get_seq_by_id(sequence_identifier)
+            for dom in hit.domains:
+                
+                dh = Hit(
+                        hid=hmm_id,
+                        target_len=hmm_len,
+                        start_location=dom.alignment.target_from,
+                        stop_location=dom.alignment.target_to,
+                        score = dom.i_evalue, # np.format_float_scientific( val ,precision=4) ,
+                        method=&#34;hmmsearch&#34;,
+                        coverage=(dom.alignment.target_to-dom.alignment.target_from)/hmm_len,#len(seq.seq),
+                        src = hmm_id,
+                        identity = round(
+                            self.hamming_distance(dom.alignment.target_sequence.lower(),dom.alignment.hmm_sequence.lower()),2)                            
+                    )
+                seq.addhit(dh)
+
+
+    sequences_with_hit = Sequences()
+    sequences_with_hit.sequences = [self.get_seq_by_id(sid) for sid in seq_with_hit]
+    return sequences_with_hit</code></pre>
+</details>
+</dd>
+<dt id="pycalf.core.Sequences.Sequences.to_feature_table"><code class="name flex">
+<span>def <span class="ident">to_feature_table</span></span>(<span>self, add_sequence=True, feature_id='')</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Generate a feature table.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>add_sequence</code></strong> :&ensp;<code>bool</code></dt>
+<dd>If set, the feature sequence (str) will be append to the table.</dd>
+<dt><strong><code>feature_id</code></strong> :&ensp;<code>str</code></dt>
+<dd>If set, only feature with the same identifier will be considered.
+</dd>
+</dl>
+<h2 id="raises">Raises</h2>
+<p>None</p>
+<h2 id="return">Return</h2>
+<p>pd.DataFrame</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_feature_table(self,add_sequence=True,feature_id=&#34;&#34;):
+    &#34;&#34;&#34;Generate a feature table.
+    
+    Args:
+        add_sequence (bool): If set, the feature sequence (str) will be append to the table.
+        feature_id (str): If set, only feature with the same identifier will be considered.            
+    Raises:
+        None
+    Return:
+        pd.DataFrame
+    &#34;&#34;&#34;          
+    features = []
+    for seq in self.sequences:
+        for feature in seq.features:
+            keep=True
+            if feature_id:
+                if feature_id!=feature.id:
+                    keep=False
+            if keep:
+                f = [
+                    seq.id,
+                    seq.src,
+                    feature.type,
+                    feature.location.start,
+                    feature.location.end,
+                    feature.id,
+                    feature.qualifiers[&#34;identity&#34;],
+                    feature.qualifiers[&#34;score&#34;],
+                    feature.qualifiers[&#34;src&#34;],
+                    feature.qualifiers[&#34;src_len&#34;]
+                ]
+                if add_sequence:                    
+                    f.append(
+                        str(feature.extract(seq.seq))
+                    )
+                features.append(f)
+    return pd.DataFrame(features,columns=[
+        &#34;sequence_id&#34;,&#34;sequence_src&#34;,&#34;feature_type&#34;,&#34;feature_start&#34;,&#34;feature_end&#34;,
+        &#34;feature_id&#34;,&#34;pident&#34;,&#34;e-value&#34;,&#34;feature_src&#34;,&#34;feature_target_len&#34;,&#34;feature_seq&#34;
+    ]).set_index(&#34;sequence_id&#34;)</code></pre>
+</details>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="pycalf.core.Sequences.SequencesIO" href="#pycalf.core.Sequences.SequencesIO">SequencesIO</a></b></code>:
+<ul class="hlist">
+<li><code><a title="pycalf.core.Sequences.SequencesIO.to_fasta" href="#pycalf.core.Sequences.SequencesIO.to_fasta">to_fasta</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="pycalf.core.Sequences.SequencesIO"><code class="flex name class">
+<span>class <span class="ident">SequencesIO</span></span>
+</code></dt>
+<dd>
+<div class="desc"><p>Class to handle IO operation for Sequences object</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SequencesIO:
+    &#34;&#34;&#34;Class to handle IO operation for Sequences object&#34;&#34;&#34;
+    def _openfile(self,filename):
+        &#34;&#34;&#34;Open file in gzip or text mode.
+
+        Args:
+        filename (str): Path to file
+
+        Returns:
+        return Handle
+
+        Raises:
+        None
+        &#34;&#34;&#34;
+        if filename.endswith(&#39;.gz&#39;):
+            return gzip.open(filename,&#34;rt&#34;) 
+        else:
+            return open(filename, &#34;r&#34; )
+
+    def _parse_fasta(self,fasta,src=&#34;&#34;):   
+        &#34;&#34;&#34;Parse fasta file and return a list of Seq object.
+
+        Args:
+        fasta (str): Path to  file or file-like object.
+        src (str): Name used to keep trace of the original file for each record. Useful when multiple fasta file will be mixed. 
+
+        Returns:
+        return a list of Seq.
+
+        Raises:
+        FileNotFoundError; If fasta doesn&#39;t exist. 
+        &#34;&#34;&#34;     
+        if isinstance(fasta,str):
+            if not os.path.exists(fasta):
+                raise FileNotFoundError(&#34;{} not found&#34;.format(fasta))  
+            else:
+                fhl = self._openfile(fasta)
+        else:
+            fhl = fasta
+        
+        assert isinstance(fhl,io.TextIOWrapper)
+
+        sequences = []
+        for record in SeqIO.parse(fhl,format=&#34;fasta&#34;):
+            if len(record.seq) &lt; 10000:
+                sequences.append(Seq(record,src=src))
+            else:                
+                logging.warning(&#34;Sequence {} seems very long and can&#39;t \
+                    be scan through hmmer&#34;.format(record.id))
+        return sequences
+
+    def to_fasta(self , filehandle ):
+        &#34;&#34;&#34;Dump fasta records.
+
+        Args:
+        filehandle (File like object): Handle.
+        
+        Returns:
+        None
+
+        Raises:
+        FileNotFoundError: If fasta can&#39;t be created.
+        AssertionError: If filehandle is not a file-like object.
+        &#34;&#34;&#34;    
+        assert not isinstance(filehandle,str), &#34;Expect file like object not str&#34;
+        SeqIO.write(self.sequences, filehandle,format=&#34;fasta&#34;)</code></pre>
+</details>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="pycalf.core.Sequences.Sequences" href="#pycalf.core.Sequences.Sequences">Sequences</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="pycalf.core.Sequences.SequencesIO.to_fasta"><code class="name flex">
+<span>def <span class="ident">to_fasta</span></span>(<span>self, filehandle)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Dump fasta records.</p>
+<p>Args:
+filehandle (File like object): Handle.</p>
+<p>Returns:
+None</p>
+<p>Raises:
+FileNotFoundError: If fasta can't be created.
+AssertionError: If filehandle is not a file-like object.</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_fasta(self , filehandle ):
+    &#34;&#34;&#34;Dump fasta records.
+
+    Args:
+    filehandle (File like object): Handle.
+    
+    Returns:
+    None
+
+    Raises:
+    FileNotFoundError: If fasta can&#39;t be created.
+    AssertionError: If filehandle is not a file-like object.
+    &#34;&#34;&#34;    
+    assert not isinstance(filehandle,str), &#34;Expect file like object not str&#34;
+    SeqIO.write(self.sequences, filehandle,format=&#34;fasta&#34;)</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="pycalf.core" href="index.html">pycalf.core</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="pycalf.core.Sequences.Hit" href="#pycalf.core.Sequences.Hit">Hit</a></code></h4>
+</li>
+<li>
+<h4><code><a title="pycalf.core.Sequences.Seq" href="#pycalf.core.Sequences.Seq">Seq</a></code></h4>
+<ul class="">
+<li><code><a title="pycalf.core.Sequences.Seq.addhit" href="#pycalf.core.Sequences.Seq.addhit">addhit</a></code></li>
+<li><code><a title="pycalf.core.Sequences.Seq.digitize" href="#pycalf.core.Sequences.Seq.digitize">digitize</a></code></li>
+<li><code><a title="pycalf.core.Sequences.Seq.get_feature" href="#pycalf.core.Sequences.Seq.get_feature">get_feature</a></code></li>
+<li><code><a title="pycalf.core.Sequences.Seq.per_residue_annotation" href="#pycalf.core.Sequences.Seq.per_residue_annotation">per_residue_annotation</a></code></li>
+<li><code><a title="pycalf.core.Sequences.Seq.sanitize_record" href="#pycalf.core.Sequences.Seq.sanitize_record">sanitize_record</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pycalf.core.Sequences.Sequences" href="#pycalf.core.Sequences.Sequences">Sequences</a></code></h4>
+<ul class="two-column">
+<li><code><a title="pycalf.core.Sequences.Sequences.blastp" href="#pycalf.core.Sequences.Sequences.blastp">blastp</a></code></li>
+<li><code><a title="pycalf.core.Sequences.Sequences.digitize" href="#pycalf.core.Sequences.Sequences.digitize">digitize</a></code></li>
+<li><code><a title="pycalf.core.Sequences.Sequences.get_feature" href="#pycalf.core.Sequences.Sequences.get_feature">get_feature</a></code></li>
+<li><code><a title="pycalf.core.Sequences.Sequences.get_seq_by_id" href="#pycalf.core.Sequences.Sequences.get_seq_by_id">get_seq_by_id</a></code></li>
+<li><code><a title="pycalf.core.Sequences.Sequences.hamming_distance" href="#pycalf.core.Sequences.Sequences.hamming_distance">hamming_distance</a></code></li>
+<li><code><a title="pycalf.core.Sequences.Sequences.hmmsearch" href="#pycalf.core.Sequences.Sequences.hmmsearch">hmmsearch</a></code></li>
+<li><code><a title="pycalf.core.Sequences.Sequences.sequences" href="#pycalf.core.Sequences.Sequences.sequences">sequences</a></code></li>
+<li><code><a title="pycalf.core.Sequences.Sequences.to_feature_table" href="#pycalf.core.Sequences.Sequences.to_feature_table">to_feature_table</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="pycalf.core.Sequences.SequencesIO" href="#pycalf.core.Sequences.SequencesIO">SequencesIO</a></code></h4>
+<ul class="">
+<li><code><a title="pycalf.core.Sequences.SequencesIO.to_fasta" href="#pycalf.core.Sequences.SequencesIO.to_fasta">to_fasta</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.10.0</a>.</p>
+</footer>
+</body>
+</html>

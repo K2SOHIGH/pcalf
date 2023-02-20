@@ -1,14 +1,14 @@
 
 import sys
+import re
 import logging
+import tempfile
 import concurrent
 import concurrent.futures
-from shutil import which
+import multiprocessing
 
-if sys.version_info[0] < 3: 
-    from StringIO import StringIO
-else:
-    from io import StringIO
+import pandas as pd
+from shutil import which
 
 import pyhmmer
 import tqdm
@@ -19,8 +19,7 @@ from pycalf.utils import log
 from pycalf.core.Hmm import Hmm
 from pycalf.core.Sequences  import Sequences, Seq , Hit
 
-
-
+from Bio.SeqRecord import SeqRecord
 
 logging.basicConfig(
     format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
@@ -28,11 +27,9 @@ logging.basicConfig(
     handlers=[]
 )
 
-
-
 def _search_calcyanin(fasta:str, 
                     src:str,
-                    glyx3_easel_hmm:pyhmmer.plan7.HMM, 
+                    glyx3_hmm:pyhmmer.plan7.HMM, 
                     gly1_hmm:pyhmmer.plan7.HMM, 
                     gly2_hmm:pyhmmer.plan7.HMM, 
                     gly3_hmm:pyhmmer.plan7.HMM,
@@ -40,12 +37,31 @@ def _search_calcyanin(fasta:str,
                     glyx3_evalue_threshold:float=1e-30,
                     glyx3_coverage_threshold:float=0.5,
                     ):
+    """Find calcyanin within a fasta file using several HMM profiles and 'database' of known N-ter.
+    
+    Args:
+        fasta (str): Path to a fasta file - required.
+        src (str): will be attached to calcyanin. Useful when searching across multiple files.  
+        glyx3_hmm (pyhmmer.plan7.HMM):  Glyx3 HMM profile - required
+        gly1_hmm (pyhmmer.plan7.HMM): Gly1 HMM profile - required
+        gly2_hmm (pyhmmer.plan7.HMM): Gly2 HMM profile - required
+        gly3_hmm (pyhmmer.plan7.HMM): Gly3 HMM profile - required
+        nter_fa (str): Path to fasta file containing known N-ter sequences - required
 
-    # Setup sequences
+        glyx3_evalue_threshold (float): E-value threshold for glyx3 
+        glyx3_coverage_threshold (float): Coverage theshold for glyx3
+
+    Raises:
+        TypeError if one sequence is not an instance of pyhmmer.easel.DigitalSequence.
+
+    Return:
+        Hmm object
+    """
+    # Setup sequences - Parse fasta into Sequences object 
     sequences = Sequences(fasta,src=src)
 
-    # Search GlyX3
-    glyx3_sequences = sequences.hmmsearch([glyx3_easel_hmm])
+    # Search sequences against GlyX3 profile
+    glyx3_sequences = sequences.hmmsearch([glyx3_hmm])
     for seq in glyx3_sequences.sequences:
         hit_below_evalue_threshold = [ h for h in seq.hits if h.score < glyx3_evalue_threshold]     
         if hit_below_evalue_threshold:          
@@ -75,7 +91,7 @@ def _search_calcyanin(fasta:str,
     
     glyx3_sequences.sequences = [s for s in glyx3_sequences.sequences if s.features] 
     
-    # Search GlyZip
+    # Search GlyZip profiles
 
     glzips_easel_hmm = [gly1_hmm,gly2_hmm,gly3_hmm]
     glyx3_sequences = glyx3_sequences.hmmsearch(glzips_easel_hmm)
@@ -141,12 +157,12 @@ def _search_calcyanin(fasta:str,
                         valid_nter_hit.start_location, 
                         valid_nter_hit.stop_location
                         ),
-                    id=valid_nter_hit.hid,
+                    id="N-ter",
                     type="domain", 
                     qualifiers={
                         "n_hits":len(seq.hits),
                         "score":valid_nter_hit.score,
-                        "src":"blastp",
+                        "src":valid_nter_hit.hid,
                         "src_len":valid_nter_hit.target_len,
                         "identity":valid_nter_hit.identity
                     })
@@ -157,36 +173,62 @@ def _search_calcyanin(fasta:str,
     return glyx3_sequences
 
 def _search_calcyanin_mt(args):    
+    """helper function to run search_calcyanin() from concurrent futures."""
     return _search_calcyanin(*args)
 
-def search_calcyanin(fastas:list,  
+def _search_calcyanin_concurrent(fastas:list,  
                     srcs:list,                                
-                    glyx3_hmm:pyhmmer.plan7.HMM, 
-                    gly1_hmm:pyhmmer.plan7.HMM, 
-                    gly2_hmm:pyhmmer.plan7.HMM, 
-                    gly3_hmm:pyhmmer.plan7.HMM,
+                    glyx3_hmm:Hmm, 
+                    gly1_hmm:Hmm, 
+                    gly2_hmm:Hmm, 
+                    gly3_hmm:Hmm,
                     nter_fa:str, 
                     glyx3_evalue_threshold:float=1e-30,
-                    glyx3_coverage_threshold:float=0.5,   
-                    ):
+                    glyx3_coverage_threshold:float=0.5):
+    """Wrapper to run multiple file at once with the function _search_calcyanin.
+    
+    Args:
+        fastas (list): list of fasta file - required.
+        srcs (list): list of flag that will be attached to calcyanin. Useful when searching across multiple files.  
+        glyx3_hmm (pyhmmer.plan7.HMM):  Glyx3 HMM profile - required
+        gly1_hmm (pyhmmer.plan7.HMM): Gly1 HMM profile - required
+        gly2_hmm (pyhmmer.plan7.HMM): Gly2 HMM profile - required
+        gly3_hmm (pyhmmer.plan7.HMM): Gly3 HMM profile - required
+        nter_fa (str): Path to fasta file containing known N-ter sequences - required
+
+        glyx3_evalue_threshold (float): E-value threshold for glyx3 
+        glyx3_coverage_threshold (float): Coverage theshold for glyx3
+
+    Raises:
+        AssertionError if one hmm is not an instance of Hmm.
+
+    Return:
+        Hmm object
+    """                 
+                       
+    assert isinstance(glyx3_hmm,Hmm)
+    assert isinstance(gly1_hmm, Hmm)
+    assert isinstance(gly2_hmm, Hmm)
+    assert isinstance(gly3_hmm, Hmm)
     assert len(srcs)==len(fastas)
+
     pools = []
     l = []
     for fasta_file,src in zip(fastas,srcs):
         pools.append(
             (fasta_file,
             src,
-            glyx3_hmm,
-            gly1_hmm,
-            gly2_hmm,
-            gly3_hmm,
+            glyx3_hmm.hmm,
+            gly1_hmm.hmm,
+            gly2_hmm.hmm,
+            gly3_hmm.hmm,
             nter_fa,
             glyx3_evalue_threshold,
             glyx3_coverage_threshold,
             )
         )
     
-    with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=multiprocessing.cpu_count()-1) as executor:
         l+=list(tqdm.tqdm(executor.map(_search_calcyanin_mt, pools), total=len(pools)))
         
     calcyanin_sequences = Sequences()
@@ -195,88 +237,198 @@ def search_calcyanin(fastas:list,
 
     return calcyanin_sequences
 
-def iterative_search(fastas:list, 
-                    srcs:list,
-                    glyx3:Hmm, 
-                    gly1:Hmm, 
-                    gly2:Hmm, 
-                    gly3:Hmm,
-                    nter_fa:str, 
-                    glyx3_evalue_threshold:float=1e-30,
-                    glyx3_coverage_threshold:float=0.5,                
-                    ): 
-    logging.info("Iterative : True")
+def __modifyline__(string,val):
+    """Modify the weight of Glycine residue"""
+    liste = string.split()
+    if len(liste) >= 21:
+        liste[6] = str(val*float(liste[6]))
+    elif len(liste) == 20:
+        liste[5] = str(val*float(liste[5]))
+    else : 
+        return string
+    return("  ".join(liste))
+
+def increase_glycine_weight(hmm,pc):
+    """Increase weight of Glycine within a hmm profile.
+    
+    Args:
+        hmm (Hmm): Hmm object.
+        pc (float): weigth factor.
+    Raises:
+        None
+    Return:
+        weighted pyhmmer.plan7.HMM
+    """
+    # dump hmm as tmpfile
+    tmp = tempfile.NamedTemporaryFile(mode="wb")
+    hmm.hmm.write(tmp,binary=False)
+    tmp.flush()
+    # update lines 
+    start =  True
+    val = 1 - pc
+    l = []
+    with open(tmp.name,"r") as fin:
+        for line in fin:
+            if start:
+                res = re.match(".*COMPO.*",line)
+                if res:
+                    start = False
+                    newline = __modifyline__(line,val)+"\n"
+                else:
+                    newline = line
+            else:
+                    newline = __modifyline__(line,val)+"\n"
+            l.append(newline)    
+    tmp = tempfile.NamedTemporaryFile(mode="w")
+    with open(tmp.name,'wb') as fout:
+        for _ in l:
+            tmp.write(_)
+    tmp.flush()
+    
+    with pyhmmer.plan7.HMMFile( tmp.name ) as hmm_file:
+        hmm = hmm_file.read()
+    return hmm
+
+def update_hmm(l_seq,hmm):
+    """Update Hmm by aligning sequences against it
+    
+    Args:
+        l_seq (list): List of Seq object.
+        hmm (Hmm): Hmm object.
+    Raises:
+        None
+    Return:
+        Updated Hmm object.
+    """    
+    l_digital_seq = [ s.digitize() for s in l_seq ]
+    new_hmm = hmm.hmmalign( l_digital_seq )
+    new_hmm.hmm = increase_glycine_weight( new_hmm,0.2 )
+    return new_hmm
+
+def search(
+        fastas:list, 
+        srcs:list,
+        glyx3:Hmm, 
+        gly1:Hmm, 
+        gly2:Hmm, 
+        gly3:Hmm,
+        nter_fa:str, 
+        glyx3_evalue_threshold:float=1e-30,
+        glyx3_coverage_threshold:float=0.5,
+        is_iterative=True): 
+    """Search for calcyanin within one or more fasta files using several HMM profiles and 'database' of known N-ter.
+
+    If is_iterative is set , then HMMs profiles and N-ter database is updated at each iteration with new calcyanin if any.
+    it's first search for calcyanin based on the Glycine zipper repeat (aka Glyx3). Then each glycine zipper is searched using 
+    a specific HMM profile. Finally, sequences with a Glyx3 are searched against a database of known N-ter using blastp. 
+    
+    Args:
+        fastas (list): list of fasta file - required.
+        srcs (list): list of flag that will be attached to calcyanin. Useful when searching across multiple files. 
+        glyx3_hmm (pyhmmer.plan7.HMM):  Glyx3 HMM profile - required
+        gly1_hmm (pyhmmer.plan7.HMM): Gly1 HMM profile - required
+        gly2_hmm (pyhmmer.plan7.HMM): Gly2 HMM profile - required
+        gly3_hmm (pyhmmer.plan7.HMM): Gly3 HMM profile - required
+        nter_fa (str): Path to fasta file containing known N-ter sequences - required
+        glyx3_evalue_threshold (float): E-value threshold for glyx3 
+        glyx3_coverage_threshold (float): Coverage theshold for glyx3
+        is_iterative (bool): If set iterative 
+    Raises:
+        TypeError if one sequence is not an instance of pyhmmer.easel.DigitalSequence.
+    Return:
+        A tuple containing calcyanins as Sequences object, Glyx3, Gly1, Gly2 and Gly3 as Hmm objects.
+    """
+
+    
     not_converged = True
     lseqs = []
-    max_iteration = 10
-    logging.info("Max Iterative : {}".format(max_iteration))
+    logging.info("Iterative : {}".format(is_iterative))
+    max_iteration = 1
+    if is_iterative:
+        max_iteration=10        
+        logging.info("Max Iteration : {}".format(max_iteration))
     ite=0
     while not_converged:
-        # search calcyanin
-        
-        ite += 1
-        if ite == max_iteration:
-            logging.warning("Max iteration reached.")
-            break
-        logging.info(" [iteration {}] |  Search calcyanin".format(ite))
-        calcyanin_sequences = search_calcyanin(fastas, 
+        # search calcyanin        
+        logging.info("[iteration {}] |  Search calcyanin".format(ite))
+        calcyanin_sequences = _search_calcyanin_concurrent(fastas, 
                 srcs,
-                glyx3.hmm,
-                gly1.hmm,
-                gly2.hmm,
-                gly3.hmm,
+                glyx3,
+                gly1,
+                gly2,
+                gly3,
                 nter_fa,
                 glyx3_evalue_threshold,
                 glyx3_coverage_threshold 
             )
-        
+        not_converged=False        
         if calcyanin_sequences.sequences:
-            
+            #logging.info(" [iteration {}] |  New calcyanin detected.".format(ite))                    
             for seq in calcyanin_sequences.sequences:
-                not_converged=False
-                if seq.id not in lseqs:
-                    logging.info(" [iteration {}] |  New calcyanin detected.".format(ite))
-                    lseqs.append(seq.id)
+                if seq.id not in lseqs:                          
+                    lseqs.append(seq.id)         
                     not_converged=True
         
-            logging.info(" [iteration {}] |  Updating GlyX3".format(ite))
+        if not_converged:
+            logging.info("[iteration {}] | New calcyanin found ! :)".format(ite))        
+            logging.info("[iteration {}] |  Updating GlyX3".format(ite))
             glyx3features = calcyanin_sequences.get_feature("GlyX3")
-            if glyx3features:        
-                glyx3_hmm,glyx3_msa = glyx3.hmmalign(glyx3features)
-                glyx3.hmm = glyx3_hmm
-                glyx3.msa = glyx3_msa
-            
-            logging.info(" [iteration {}] |  Updating Gly1".format(ite))
+            if glyx3features:  
+                glyx3 = update_hmm(glyx3features,glyx3)
+
+            logging.info("[iteration {}] |  Updating Gly1".format(ite))
             gly1features = calcyanin_sequences.get_feature("Gly1")        
             if gly1features:
-                gly1_hmm,gly1_msa = gly1.hmmalign(gly1features)
-                gly1.hmm = gly1_hmm
-                gly1.msa = gly1_msa
+                gly1 = update_hmm(gly1features,gly1)
+  
+            logging.info("[iteration {}] |  Updating Gly2".format(ite))
+            gly2features = calcyanin_sequences.get_feature("Gly2")        
+            if gly2features:
+                gly2 = update_hmm(gly2features,gly2)
 
-            logging.info(" [iteration {}] |  Updating Gly2".format(ite))
-            gly2features= calcyanin_sequences.get_feature("Gly2")   
-            if gly2features:     
-                gly2_hmm,gly2_msa = gly2.hmmalign(gly2features)
-                gly2.hmm = gly2_hmm
-                gly2.msa = gly2_msa
-
-            logging.info(" [iteration {}] |  Updating Gly3".format(ite))
+            logging.info("[iteration {}] |  Updating Gly3".format(ite))
             gly3features = calcyanin_sequences.get_feature("Gly3")        
             if gly3features:
-                gly3_hmm,gly3_msa = gly3.hmmalign(gly3features)
-                gly3.hmm = gly3_hmm
-                gly3.msa = gly3_msa
+                gly3 = update_hmm(gly1features,gly3)
+        
+            ite += 1
+            if ite == max_iteration:
+                logging.warning("Max iteration reached.")
+                not_converged=False
+        else:
+            logging.info("[iteration {}] | No new calcyanin detected.".format(ite))
+            logging.info("[iteration {}] | Stop.".format(ite))
+            
     return calcyanin_sequences, glyx3 , gly1, gly2, gly3    
 
             
-def to_fasta(filehandle, sequences):
-    assert not isinstance(filehandle,str), "Expect file like object not str"
-    SeqIO.write(sequences, filehandle,format="fasta")
+def make_nter_fasta(nterdb):   
+    """parse the nterdb file to dictionnary"""
+    nter_dict={} 
+    with open(nterdb) as db:
+        for line in db.readlines():
+            nter, strain, seq = line.strip().split()
+            nter_dict[strain] = (nter,seq)
+            
+    return nter_dict
 
-
-
-
-
+def decision_tree(nter , cter):
+    """give a flag to a calcyanin based on its C-ter modular organization and its N-ter."""
+    if re.search("Gly1,Gly2,Gly3",cter):
+        if nter in ["CoBaHMA-type","Y-type","X-type","Z-type"]:
+            flag = "Calcyanin with known N-ter"
+        else:
+            flag = "Calcyanin with new N-ter"
+    elif re.search("Gly1,Gly3",cter) and nter == "Y-type":
+        flag = "Calcyanin with known N-ter"
+    elif re.search ("Gly(1|2|3)",cter):
+        if nter in ["CoBaHMA-type","Y-type","X-type","Z-type"]:
+            flag = "Atypical Gly region with known N-ter"
+        else:
+            flag = "Atypical Gly region with new N-ter"
+    else:
+        flag="Ancestral gly containing protein"
+    return flag
 
 if __name__ == "__main__":
     
@@ -286,11 +438,21 @@ if __name__ == "__main__":
     logging.getLogger('').addHandler(
         console)
     #f = "/Users/mmillet/harley_databases/tmp/datas/taxids/1126/ncbi_dataset/data/GCA_008757435.1/cds_from_genomic.faa.gz"
-    glyx3 = Hmm("../datas/GlyX3.msa.fa")
-    gly1 = Hmm("../datas/Gly1.msa.fa")
-    gly2 = Hmm("../datas/Gly2.msa.fa")
-    gly3 = Hmm("../datas/Gly3.msa.fa")
-    nter = "../datas/nterdb.fasta"
+    glyx3 = Hmm("Glyx3","../datas/GlyX3.msa.fa")
+    gly1 = Hmm("Gly1","../datas/Gly1.msa.fa")
+    gly2 = Hmm("Gly2","../datas/Gly2.msa.fa")
+    gly3 = Hmm("Gly3","../datas/Gly3.msa.fa")
+    
+    nterdb = make_nter_fasta("../datas/nterdb.ref.tsv")
+    nterfa = tempfile.NamedTemporaryFile(mode="w+")
+    for sid, nter in nterdb.items():
+        nterfa.write(">{}|{}\n{}\n".format(nter[0],sid,nter[1]))
+    nterfa.flush()
+        
+    _glyx3_nseq = glyx3.hmm.nseq
+    _gly1_nseq = gly1.hmm.nseq
+    _gly2_nseq = gly2.hmm.nseq
+    _gly3_nseq = gly3.hmm.nseq
 
     fastas = []
     names = []
@@ -299,21 +461,64 @@ if __name__ == "__main__":
             n,f = line.strip().split()
             fastas.append(f)
             names.append(n)
-    logging.info("Search start.")
-    fastas = ["../test/ncbi_dataset/data/GCF_000307995.1/protein.faa"]
-    names = ["GCF_000307995"]
-    search_calcyanin(
-        fastas,#[0:5],
-        names,#[0:5],
+    logging.info("Start search.")
+    fastas = ["../test/ncbi_dataset/data/GCF_000307995.1/protein.faa"]# for i in range(0,5)]
+    names = ["GCF_000307995"]# for i in range(0,5) ]
+
+    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 = search(
+        fastas,
+        names,
         glyx3,
         gly1,
         gly2,
         gly3,
-        nter,        
-        glyx3_evalue_threshold=1e-30)
-    logging.info(" End. ")
-    #to_fasta(sys.stdout,sequences = calc.sequences)
-    #print(Sequence(s).digitize())
-    
+        nterfa.name,        
+        glyx3_evalue_threshold=1e-30,
+        is_iterative=False
+    )
 
-    #print(seqs.digitize()[0:110])
+    #print(calseq.to_feature_table())
+    #u_gly1.hmm.write(open("test.new.hmm","wb"))
+    logging.info("# Number of calcyanin detected : {}".format(len(calseq.sequences)))
+    logging.info("# N_seqs within Glyx3 HMM : {} [+{}]".format(u_glyx3.hmm.nseq, u_glyx3.hmm.nseq -  _glyx3_nseq))
+    logging.info("# N_seqs within Gly1 HMM : {} [+{}]".format(u_gly1.hmm.nseq, u_gly1.hmm.nseq - _gly1_nseq))
+    logging.info("# N_seqs within Gly2 HMM : {} [+{}]".format(u_gly2.hmm.nseq, u_gly2.hmm.nseq - _gly2_nseq))
+    logging.info("# N_seqs within Gly3 HMM : {} [+{}]".format(u_gly3.hmm.nseq, u_gly3.hmm.nseq - _glyx3_nseq))
+    
+    logging.info("Dumping HMMs.")
+    u_glyx3.hmm.write(open("Glyx3.hmm","wb"))
+    u_gly1.hmm.write(open("Gly1.hmm","wb"))
+    u_gly2.hmm.write(open("Gly2.hmm","wb"))
+    u_gly3.hmm.write(open("Gly3.hmm","wb"))
+    logging.info("Dumping MSAs.")
+    u_glyx3.msa.write(open("Glyx3.msa.fa","wb"),format="afa")
+    u_gly1.msa.write(open("Gly1.msa.fa","wb"),format="afa")
+    u_gly2.msa.write(open("Gly2.msa.fa","wb"),format="afa")
+    u_gly3.msa.write(open("Gly3.msa.fa","wb"),format="afa")
+    logging.info("Dumping feature table.")
+    features = calseq.to_feature_table()
+    features.to_csv("features.tsv",sep="\t",header=True,index=True)
+    logging.info("Make summary.")
+    summary_datas = []
+    for sequence, seq_features_df in features.groupby("sequence_id"):
+        cterom = ",".join(
+                        list(
+                            seq_features_df[seq_features_df.feature_id.isin(["Gly1","Gly2","Gly3"]) ].sort_values("feature_start").feature_id
+                            )
+                )
+        nterom = "".join(set(
+            seq_features_df[seq_features_df.feature_id == "N-ter" ].feature_src
+        ))
+        
+            
+        summary_datas.append(
+            {
+                "sequence_accession":sequence,
+                "flag":decision_tree(nterom.split("|")[0],cterom),
+                "nter":nterom.split("|")[0],
+                "nter_neighbor": nterom.split("|")[1],
+                "cter":cterom,
+                "sequence":str(calseq.get_seq_by_id(sequence).seq)
+            }
+        )
+        pd.DataFrame(summary_datas).set_index("sequence_accession").to_csv(sys.stdout,sep="\t",index=True,header=True)

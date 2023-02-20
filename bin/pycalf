@@ -119,8 +119,8 @@ def get_args():
     
     parser.add_argument('--blastp', default = None)
 
-    parser.add_argument('--nterdb', dest='nterdb_fa', 
-                        default = DATASDIR + "/nterdb.fasta", 
+    parser.add_argument('--nterdb', dest='nterdb', 
+                        default = DATASDIR + "/nterdb.ref.tsv", 
                         help='path to nterdb fasta file (default: %(default)s)')
     parser.add_argument('--nter-mapping-file', dest='nterdb_tab', 
                         default= DATASDIR + "/nterdb.tsv", 

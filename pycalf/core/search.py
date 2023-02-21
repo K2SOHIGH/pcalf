@@ -16,8 +16,8 @@ import tqdm
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
 from pycalf.utils import log
-from pycalf.core.Hmm import Hmm
-from pycalf.core.Sequences  import Sequences, Seq , Hit
+from pycalf.core.biohmm import Hmm
+from pycalf.core.bioseq  import Sequences, Seq , Hit
 
 from Bio.SeqRecord import SeqRecord
 
@@ -402,16 +402,6 @@ def search(
     return calcyanin_sequences, glyx3 , gly1, gly2, gly3    
 
             
-def make_nter_fasta(nterdb):   
-    """parse the nterdb file to dictionnary"""
-    nter_dict={} 
-    with open(nterdb) as db:
-        for line in db.readlines():
-            nter, strain, seq = line.strip().split()
-            nter_dict[strain] = (nter,seq)
-            
-    return nter_dict
-
 def decision_tree(nter , cter):
     """give a flag to a calcyanin based on its C-ter modular organization and its N-ter."""
     if re.search("Gly1,Gly2,Gly3",cter):
@@ -430,95 +420,12 @@ def decision_tree(nter , cter):
         flag="Ancestral gly containing protein"
     return flag
 
-if __name__ == "__main__":
-    
-    console = logging.StreamHandler()
-    console.setLevel(logging.INFO)
-    console.setFormatter(log.CustomFormatter())
-    logging.getLogger('').addHandler(
-        console)
-    #f = "/Users/mmillet/harley_databases/tmp/datas/taxids/1126/ncbi_dataset/data/GCA_008757435.1/cds_from_genomic.faa.gz"
-    glyx3 = Hmm("Glyx3","../datas/GlyX3.msa.fa")
-    gly1 = Hmm("Gly1","../datas/Gly1.msa.fa")
-    gly2 = Hmm("Gly2","../datas/Gly2.msa.fa")
-    gly3 = Hmm("Gly3","../datas/Gly3.msa.fa")
-    
-    nterdb = make_nter_fasta("../datas/nterdb.ref.tsv")
-    nterfa = tempfile.NamedTemporaryFile(mode="w+")
-    for sid, nter in nterdb.items():
-        nterfa.write(">{}|{}\n{}\n".format(nter[0],sid,nter[1]))
-    nterfa.flush()
-        
-    _glyx3_nseq = glyx3.hmm.nseq
-    _gly1_nseq = gly1.hmm.nseq
-    _gly2_nseq = gly2.hmm.nseq
-    _gly3_nseq = gly3.hmm.nseq
-
-    fastas = []
-    names = []
-    with open("test.txt") as stream:
-        for line in stream.readlines():
-            n,f = line.strip().split()
-            fastas.append(f)
-            names.append(n)
-    logging.info("Start search.")
-    fastas = ["../test/ncbi_dataset/data/GCF_000307995.1/protein.faa"]# for i in range(0,5)]
-    names = ["GCF_000307995"]# for i in range(0,5) ]
-
-    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 = search(
-        fastas,
-        names,
-        glyx3,
-        gly1,
-        gly2,
-        gly3,
-        nterfa.name,        
-        glyx3_evalue_threshold=1e-30,
-        is_iterative=False
-    )
-
-    #print(calseq.to_feature_table())
-    #u_gly1.hmm.write(open("test.new.hmm","wb"))
-    logging.info("# Number of calcyanin detected : {}".format(len(calseq.sequences)))
-    logging.info("# N_seqs within Glyx3 HMM : {} [+{}]".format(u_glyx3.hmm.nseq, u_glyx3.hmm.nseq -  _glyx3_nseq))
-    logging.info("# N_seqs within Gly1 HMM : {} [+{}]".format(u_gly1.hmm.nseq, u_gly1.hmm.nseq - _gly1_nseq))
-    logging.info("# N_seqs within Gly2 HMM : {} [+{}]".format(u_gly2.hmm.nseq, u_gly2.hmm.nseq - _gly2_nseq))
-    logging.info("# N_seqs within Gly3 HMM : {} [+{}]".format(u_gly3.hmm.nseq, u_gly3.hmm.nseq - _glyx3_nseq))
-    
-    logging.info("Dumping HMMs.")
-    u_glyx3.hmm.write(open("Glyx3.hmm","wb"))
-    u_gly1.hmm.write(open("Gly1.hmm","wb"))
-    u_gly2.hmm.write(open("Gly2.hmm","wb"))
-    u_gly3.hmm.write(open("Gly3.hmm","wb"))
-    logging.info("Dumping MSAs.")
-    u_glyx3.msa.write(open("Glyx3.msa.fa","wb"),format="afa")
-    u_gly1.msa.write(open("Gly1.msa.fa","wb"),format="afa")
-    u_gly2.msa.write(open("Gly2.msa.fa","wb"),format="afa")
-    u_gly3.msa.write(open("Gly3.msa.fa","wb"),format="afa")
-    logging.info("Dumping feature table.")
-    features = calseq.to_feature_table()
-    features.to_csv("features.tsv",sep="\t",header=True,index=True)
-    logging.info("Make summary.")
-    summary_datas = []
-    for sequence, seq_features_df in features.groupby("sequence_id"):
-        cterom = ",".join(
-                        list(
-                            seq_features_df[seq_features_df.feature_id.isin(["Gly1","Gly2","Gly3"]) ].sort_values("feature_start").feature_id
-                            )
-                )
-        nterom = "".join(set(
-            seq_features_df[seq_features_df.feature_id == "N-ter" ].feature_src
-        ))
-        
+def parse_nterdb(nterdb):   
+    """parse the nterdb file to dictionnary"""
+    nter_dict={} 
+    with open(nterdb) as db:
+        for line in db.readlines():
+            nter, strain, seq = line.strip().split()
+            nter_dict[strain] = (nter,seq)
             
-        summary_datas.append(
-            {
-                "sequence_accession":sequence,
-                "flag":decision_tree(nterom.split("|")[0],cterom),
-                "nter":nterom.split("|")[0],
-                "nter_neighbor": nterom.split("|")[1],
-                "cter":cterom,
-                "sequence":str(calseq.get_seq_by_id(sequence).seq)
-            }
-        )
-        pd.DataFrame(summary_datas).set_index("sequence_accession").to_csv(sys.stdout,sep="\t",index=True,header=True)
+    return nter_dict

@@ -22,13 +22,13 @@ import sys
 import shutil
 import logging
 import multiprocessing
+import tempfile
 from importlib import resources
-import gzip
 
 import pandas as pd
 
-from pycalf.core import search,Sequences
-from pycalf.utils import utils as u
+from pycalf.core import search,bioseq,biohmm
+from pycalf.utils import utils 
 from pycalf.utils import log
 
 
@@ -121,13 +121,12 @@ def get_args():
 
     parser.add_argument('--nterdb', dest='nterdb', 
                         default = DATASDIR + "/nterdb.ref.tsv", 
-                        help='path to nterdb fasta file (default: %(default)s)')
-    parser.add_argument('--nter-mapping-file', dest='nterdb_tab', 
-                        default= DATASDIR + "/nterdb.tsv", 
-                        help='path to nterdb mapping file (default: %(default)s)')
+                        help='path to nterdb tabular file (default: %(default)s)')
+
     parser.add_argument('--nter-coverage', dest='nter_coverage', 
                         type=float,default=80,
                         help="nter minimal coverage (default: %(default)s)")
+
     parser.add_argument('--nter-evalue', dest='nter_evalue', 
                         type=float,default=1e-07,
                         help="nter evalue threshold (default: %(default)s)")
@@ -174,7 +173,6 @@ def main():
             fhandler
         )
     
-    
     if not shutil.which("blastp"):
         logging.error("blast not found, please, considere installing it using conda install -c bioconda blast.")
         exit(-1)
@@ -196,168 +194,105 @@ def main():
         logging.error("Come on, please choose one between --fasta and --input-file...")
         exit(-1)
 
-
+    
     console = logging.StreamHandler()
     console.setLevel(logging.INFO)
     console.setFormatter(log.CustomFormatter())
     logging.getLogger('').addHandler(
         console)
-    #f = "/Users/mmillet/harley_databases/tmp/datas/taxids/1126/ncbi_dataset/data/GCA_008757435.1/cds_from_genomic.faa.gz"
-    glyx3 = Hmm("test.hmm","../datas/GlyX3.msa.fa")
-    gly1 = Hmm("../datas/Gly1.hmm","../datas/Gly1.msa.fa")
-    gly2 = Hmm("../datas/Gly2.hmm","../datas/Gly2.msa.fa")
-    gly3 = Hmm("../datas/Gly3.hmm","../datas/Gly3.msa.fa")
-    nter = "../datas/nterdb.fasta"
+    
+    logging.info("Init HMMs.")
+    glyx3 = biohmm.Hmm("Glyx3",args.glyx3_phmm)
+    gly1 = biohmm.Hmm("Gly1",args.gly1_phmm)
+    gly2 = biohmm.Hmm("Gly2",args.gly2_phmm)
+    gly3 = biohmm.Hmm("Gly3",args.gly3_phmm)
+    
+    logging.info("Init N-Ter DB.")
+    nterdb = utils.parse_nterdb(args.nterdb)
+    nterfa = tempfile.NamedTemporaryFile(mode="w+")
+    for sid, nter in nterdb.items():
+        nterfa.write(">{}|{}\n{}\n".format(nter[0],sid,nter[1]))
+    nterfa.flush()
+    
+    # Initital number of sequences.
+    _glyx3_nseq = glyx3.hmm.nseq
+    _gly1_nseq = gly1.hmm.nseq
+    _gly2_nseq = gly2.hmm.nseq
+    _gly3_nseq = gly3.hmm.nseq
+
 
     fastas = []
     names = []
-    with open("test.txt") as stream:
-        for line in stream.readlines():
-            n,f = line.strip().split()
-            fastas.append(f)
-            names.append(n)
-    logging.info("Search start.")
-    calc = iterative_search(
-        fastas[0:5],
-        names[0:5],
+    # with open("test.txt") as stream:
+    #     for line in stream.readlines():
+    #         n,f = line.strip().split()
+    #         fastas.append(f)
+    #         names.append(n)
+    logging.info("Start search.")
+    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 = search(
+        fastas,
+        names,
         glyx3,
         gly1,
         gly2,
         gly3,
-        nter,        
-        glyx3_evalue_threshold=1e-30)
-
-    ########@@
-    # os.makedirs(res_dir,exist_ok=True)       
-    # glyx3_hmm = u.easelhmm(args.glyx3_phmm)
-    # glyzip_hmm = [ u.easelhmm(i)  for i in [args.gly1_phmm,args.gly2_phmm,args.gly3_phmm] ]
-
-
-
-    # if args.fasta:
-    #     annotations=[]
-    #     InputF = "stdin" if not isinstance(args.fasta,str) else os.path.basename(args.fasta)
-    #     annotations.append(annotate.annotate_st(args.fasta , glyx3_hmm , glyzip_hmm , args.nterdb_fa,
-    #         args.nterdb_tab , args , InputF = InputF ))
-    # else:
-    #     #start = time.perf_counter()        
-    #     input_datas = []
-        
-    #     for line in args.input.readlines():
-    #         fid , fil  = line.strip().split()[0:2]
-    #         annotargs = (gzip.open(fil,'rt'),glyx3_hmm , glyzip_hmm , args.nterdb_fa,
-    #                     args.nterdb_tab , args )
-    #         input_datas.append((annotargs,{"InputF":fid}))
-
-    #     annotations = annotate.annotate_mt(input_datas)
+        nterfa.name,        
+        glyx3_evalue_threshold=1e-30,
+        is_iterative=False
+    )
+    logging.info("The search is over.")
     
-    # ldf = []
-    # annotated_sequences = {}
-    # for f in annotations: 
-    #     hits,seqs = f[0]
-    #     if hits:
-    #         df = pd.DataFrame([h.to_dict() for h in hits])
+    
+    logging.info("# Number of calcyanin detected : {}".format(len(calseq.sequences)))
+    logging.info("# N_seqs within Glyx3 HMM : {} [+{}]".format(u_glyx3.hmm.nseq, u_glyx3.hmm.nseq -  _glyx3_nseq))
+    logging.info("# N_seqs within Gly1 HMM : {} [+{}]".format(u_gly1.hmm.nseq, u_gly1.hmm.nseq - _gly1_nseq))
+    logging.info("# N_seqs within Gly2 HMM : {} [+{}]".format(u_gly2.hmm.nseq, u_gly2.hmm.nseq - _gly2_nseq))
+    logging.info("# N_seqs within Gly3 HMM : {} [+{}]".format(u_gly3.hmm.nseq, u_gly3.hmm.nseq - _glyx3_nseq))
+    
+    logging.info("Dumping HMMs.") 
+    hmmdir = os.path.join(res_dir,"HMM")
+    os.makedirs(hmmdir,exist_ok=True)
+    u_glyx3.hmm.write(open(hmmdir + "/Glyx3.hmm","wb"))
+    u_gly1.hmm.write(open(hmmdir + "/Gly1.hmm","wb"))
+    u_gly2.hmm.write(open(hmmdir + "/Gly2.hmm","wb"))
+    u_gly3.hmm.write(open(hmmdir + "/Gly3.hmm","wb"))
+
+    logging.info("Dumping MSAs.")
+    msadir = os.path.join(res_dir,"MSA")
+    os.makedirs(msadir,exist_ok=True)
+    u_glyx3.msa.write(open(msadir+"/Glyx3.msa.fa","wb"),format="afa")
+    u_gly1.msa.write(open(msadir+"/Gly1.msa.fa","wb"),format="afa")
+    u_gly2.msa.write(open(msadir+"/Gly2.msa.fa","wb"),format="afa")
+    u_gly3.msa.write(open(msadir+"/Gly3.msa.fa","wb"),format="afa")
+    
+    logging.info("Dumping feature table.")
+    features = calseq.to_feature_table()
+    features.to_csv(res_dir + "/pycalf.features.tsv",sep="\t",header=True,index=True)
+    
+    logging.info("Make summary.")
+    summary_datas = []
+    for sequence, seq_features_df in features.groupby("sequence_id"):
+        cterom = ",".join(
+                        list(
+                            seq_features_df[seq_features_df.feature_id.isin(["Gly1","Gly2","Gly3"]) ].sort_values("feature_start").feature_id
+                            )
+                )
+        nterom = "".join(set(
+            seq_features_df[seq_features_df.feature_id == "N-ter" ].feature_src
+        ))
+        
             
-    #         for seqid in df.seqid.unique():
-    #             annotated_sequences[seqid] = seqs[seqid]
-    #         df["src_file"] = f[1]["InputF"]
-    #         ldf.append(df)
-    # features_df = pd.concat(ldf,axis=0)        
-    # del df,ldf
- 
-    # #logger.info("Summarizing calcyanin modular organization to %s" % res_dir + "/summary.csv" )
-    # reliable_cpt = 0
-    # sequence_identifier=[] 
-    # sequence_datas = []
-    # if features_df is not None:
-    #         for seqid , featuredf in features_df.groupby("seqid"):
-    #             #resolve cter OM
-    #             cterom = ",".join(
-    #                 list(
-    #                     featuredf[featuredf.desc == "glyzip"].sort_values("start").domid
-    #                     )
-    #             )                
-    #             # resovle nter OM
-    #             nterom = "".join(list(featuredf[featuredf.desc == "nter"].domid))
-    #             # make flag
-    #             flag = u.summarize(nterom,cterom)
-    #             src = "".join(featuredf.src_file.unique())
-    #             if not args.keep_all:                    
-    #                 if flag not in ["Calcyanin with known N-ter","Calcyanin with new N-ter"]:
-    #                     continue
-    #                 else:
-    #                     reliable_cpt += 1                 
-    #             sequence = annotated_sequences[seqid].textize().sequence                        
-    #             sequence_datas.append({
-    #                 "seqid":seqid,
-    #                 "flag":flag,
-    #                 "nter":nterom,
-    #                 "cter":cterom,
-    #                 "src":src,   
-    #                 "seqlen":len(sequence),
-    #                 "sequence":sequence,
-    #             })
-    #              #   "{}\t{}\t{}\t{}\n{}\n".format(
-    #              #   seqid, flag , nterom, cterom , src )
-    #             ##)
-    #             #sequence_identifier.append(seqid)
-    # pd.DataFrame(sequence_datas).set_index("seqid").to_csv(args.res_dir + "/pycalf_summary.tsv",sep="\t",header=True,index=True)
-    # features_df.set_index("seqid").to_csv(args.res_dir + "/pycalf_features.tsv",sep="\t",header=True,index=True)
-    # return None
-        
-    # if sequence_datas:
-    #     with open(res_dir + "/summary.tsv" , "w") as stream:                                            
-    #         stream.write("accession\tflag\tnter\tcter\n")
-    #         for s in sequence_datas:
-    #             stream.write(s)
-    #     logger.info("Summary table save to %s " % res_dir + "/summary.csv")            
-        
-    #     logger.info("make feature table ... ")
-    #     summary_df[summary_df.seqid.isin(sequence_identifier)].to_csv(
-    #             res_dir + "/features.tsv",
-    #             index=False,
-    #             header=True,
-    #             sep="\t"
-    #     )
-    #     logger.info("Feature table save to %s " % res_dir + "/features.csv")
-    #     logger.info("done.")                              
-        
-
-    #     # save calcyanin full length sequence into fasta        
-    #     u.writefasta(
-    #         u.filterfasta(glyx3seqs,sequence_identifier),
-    #         res_dir + "/fastas/calcyanin.fasta"
-    #     )      
-
-    #     # save n-ter by type  
-    #     print(summary_df)
-    #     for domain_type in summary_df.domid.unique():
-    #         l = []
-    #         if nter:
-    #             for h in (glyx3hits + glyziphits +  nterhits):
-                    
-    #                 if h.domid == domain_type:
-                        
-    #                     l.append(
-    #                         h.extract_from_fasta(sequences)
-    #                     )
-    #             print(domain_type,l)
-
-  
-
-
-
-
-    #     logger.warning("%i reliable calcyanin found." % reliable_cpt)
-        
-    #     logger.warning("%i reliable calcyanin found." % 0)                
-    #     logger.info("done.")
-              
-    # else:
-    
-    #     logger.warning("No hits against glyX3 hmm ... " )
-    
-    logger.info("end ! ")
+        summary_datas.append(
+            {
+                "sequence_accession":sequence,
+                "flag":search.decision_tree(nterom.split("|")[0],cterom),
+                "nter":nterom.split("|")[0],
+                "nter_neighbor": nterom.split("|")[1],
+                "cter":cterom,
+                "sequence":str(calseq.get_seq_by_id(sequence).seq)
+            }
+        )
+        pd.DataFrame(summary_datas).set_index("sequence_accession").to_csv(res_dir + "/pycalf.summary.tsv",sep="\t",index=True,header=True)
 
 if __name__ == "__main__":
     sys.exit(main())

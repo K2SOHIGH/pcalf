@@ -58,7 +58,7 @@ def get_args():
                         #default=(None if sys.stdin.isatty() else sys.stdin),
                         help='Input fasta file. Gzip file are not supported but you can pass them from stdin')
                        
-    parser.add_argument('-i','--input-file', dest='input', 
+    parser.add_argument('-i','--input', dest='input', 
                         type = argparse.FileType('r'), default=None,
                         help='Tabular file with name\t/path/to/file as lines. If you have multiple file to scan through pycalf you should go for this way. [fasta files specified can be compressed].')
                                   

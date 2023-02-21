@@ -3,7 +3,6 @@ README.md
 setup.py
 bin/__init__.py
 bin/pycalf
-bin/pycalf-collection
 pycalf/__init__.py
 pycalf.egg-info/PKG-INFO
 pycalf.egg-info/SOURCES.txt
@@ -12,6 +11,7 @@ pycalf.egg-info/not-zip-safe
 pycalf.egg-info/requires.txt
 pycalf.egg-info/top_level.txt
 pycalf/__pycache__/__init__.cpython-310.pyc
+pycalf/__pycache__/__init__.cpython-311.pyc
 pycalf/__pycache__/__init__.cpython-39.pyc
 pycalf/core/__init__.py
 pycalf/core/biohmm.py
@@ -21,6 +21,12 @@ pycalf/core/__pycache__/Hmm.cpython-310.pyc
 pycalf/core/__pycache__/Hmm.cpython-39.pyc
 pycalf/core/__pycache__/Sequences.cpython-310.pyc
 pycalf/core/__pycache__/__init__.cpython-310.pyc
+pycalf/core/__pycache__/__init__.cpython-311.pyc
+pycalf/core/__pycache__/__init__.cpython-39.pyc
+pycalf/core/__pycache__/biohmm.cpython-311.pyc
+pycalf/core/__pycache__/biohmm.cpython-39.pyc
+pycalf/core/__pycache__/bioseq.cpython-39.pyc
+pycalf/core/__pycache__/search.cpython-39.pyc
 pycalf/datas/Gly1.hmm
 pycalf/datas/Gly1.msa.fa
 pycalf/datas/Gly2.hmm

@@ -28,7 +28,7 @@ import psutil
 import pandas as pd
 
 from pycalf.core import search,bioseq,biohmm
-from pycalf.utils import utils 
+#from pycalf.utils import utils 
 from pycalf.utils import log
 
 
@@ -193,7 +193,7 @@ def main():
     gly3 = biohmm.Hmm("Gly3",args.gly3_msa)
     
     logging.info("Init N-Ter DB.")
-    nterdb = utils.parse_nterdb(args.nterdb)
+    nterdb = search.parse_nterdb(args.nterdb)
     
     # Initital number of sequences.
     _glyx3_nseq = glyx3.hmm.nseq

@@ -339,7 +339,15 @@ def update_hmm(l_seq,hmm,is_update_iterative=True):
     new_hmm.hmm = increase_glycine_weight( new_hmm,0.2 )
     return new_hmm
 
-
+def parse_nterdb(nterdb):   
+    """parse the nterdb file to dictionnary"""
+    nter_dict={} 
+    with open(nterdb) as db:
+        for line in db.readlines():
+            nter, strain, seq = line.strip().split()
+            nter_dict[strain] = (nter,seq)
+            
+    return nter_dict
 
 def search(
         fastas:list, 

@@ -289,7 +289,7 @@ def increase_glycine_weight(hmm,pc):
         hmm = hmm_file.read()
     return hmm
 
-def update_hmm(l_seq,hmm):
+def update_hmm(l_seq,hmm,iterative=True):
     """Update Hmm by aligning sequences against it
     
     Args:
@@ -300,8 +300,13 @@ def update_hmm(l_seq,hmm):
     Return:
         Updated Hmm object.
     """    
+
     l_digital_seq = [ s.digitize() for s in l_seq ]
-    new_hmm = hmm.hmmalign( l_digital_seq )
+    if iterative:
+        new_hmm = hmm.iterative_align(l_digital_seq)
+    else:        
+        new_hmm = hmm.hmmalign( l_digital_seq )
+    
     new_hmm.hmm = increase_glycine_weight( new_hmm,0.2 )
     return new_hmm
 
@@ -313,9 +318,14 @@ def search(
         gly2:Hmm, 
         gly3:Hmm,
         nter_fa:str, 
-        glyx3_evalue_threshold:float=1e-30,
-        glyx3_coverage_threshold:float=0.5,
-        is_iterative=True): 
+        domz:int=10000,
+        glyx3_evalue_threshold:float=1e-30,  
+        glyx3_coverage_threshold:float=0.60,  
+        glyzip_evalue_threshold:float=3.6e-4,
+        nter_coverage_threshold:float = 80, 
+        nter_evalue_threshold:float = 1e-07,
+        is_iterative:bool=True, 
+        is_update_iterative:bool=True): 
     """Search for calcyanin within one or more fasta files using several HMM profiles and 'database' of known N-ter.
 
     If is_iterative is set , then HMMs profiles and N-ter database is updated at each iteration with new calcyanin if any.

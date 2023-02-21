@@ -36,6 +36,7 @@ class SequencesIO:
         Raises:
         None
         """
+        
         if filename.endswith('.gz'):
             return gzip.open(filename,"rt") 
         else:
@@ -45,7 +46,7 @@ class SequencesIO:
         """Parse fasta file and return a list of Seq object.
 
         Args:
-        fasta (str): Path to  file or file-like object.
+        fasta: Path to  file or file-like object.
         src (str): Name used to keep trace of the original file for each record. Useful when multiple fasta file will be mixed. 
 
         Returns:

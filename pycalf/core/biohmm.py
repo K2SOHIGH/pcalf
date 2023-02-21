@@ -221,23 +221,3 @@ class Hmm(HmmIO):
         new_hmm.msa = msa
 
         return new_hmm
-
-
-if __name__ == "__main__":
-    import Sequences
-    aln1 = "../test/test1.fa.msa" 
-    fa2 = Sequences.Sequences("../test/test2.fa.msa")
-
-    O = Hmm("Gly1",aln1)
-    print(O.hmm.nseq,O.hmm.M)
-
-    A = O.iterative_align(fa2.digitize() )
-    print(A.hmm.nseq,A.hmm.M)
-    
-    Ab = O.iterative_align(fa2.digitize(),self_include=False )
-    print(Ab.hmm.nseq,Ab.hmm.M)
-
-    B = O.hmmalign(fa2.digitize() )
-    print(B.hmm.nseq,B.hmm.M)
-
-

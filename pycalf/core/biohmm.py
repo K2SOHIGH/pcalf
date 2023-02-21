@@ -191,14 +191,15 @@ class Hmm(HmmIO):
             Tuple of pyhmmer.easel.MSA and pyhmmer.plan7.HMM
         """
 
-        seq_iterator = iter(sequences)        
+                
         
         hmm = self.hmm
         msa = None
         if self_include:
             msa = self.msa
-        
-        while (seq := next(seq_iterator, None)) is not None:                                                
+        #seq_iterator = iter(sequences)
+        #while (seq := next(seq_iterator, None)) is not None:                                                
+        for seq in tqdm.tqdm(sequences,colour="yellow"):
             if not isinstance(seq,pyhmmer.easel.DigitalSequence):
                 raise TypeError("Wrong type - {} , expected pyhmmer.easel.DigitalSequence".format(type(seq)))            
             

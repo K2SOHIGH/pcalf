@@ -24,7 +24,7 @@ import logging
 import multiprocessing
 import tempfile
 from importlib import resources
-
+import psutil
 import pandas as pd
 
 from pycalf.core import search,bioseq,biohmm
@@ -54,8 +54,8 @@ def get_args():
     """,
         formatter_class= argparse.RawTextHelpFormatter
     )
-    parser.add_argument('-f','--fasta', dest='fasta', type = argparse.FileType('rt'), 
-                        default=(None if sys.stdin.isatty() else sys.stdin),
+    parser.add_argument('-f','--fasta', dest='fasta', type = str,#argparse.FileType('rt'), 
+                        #default=(None if sys.stdin.isatty() else sys.stdin),
                         help='Input fasta file. Gzip file are not supported but you can pass them from stdin')
                        
     parser.add_argument('-i','--input-file', dest='input', 
@@ -107,7 +107,7 @@ def get_args():
                         help='Path to nterdb tabular file (default: %(default)s). The file must have three column: N-ter types, N-ter accessions and N-ter amino acid sequences.')
 
     parser.add_argument('--nter-coverage', dest='nter_coverage', 
-                        type=float,default=80,
+                        type=float,default=0.80,
                         help="Nter minimal coverage (default: %(default)s).")
 
     parser.add_argument('--nter-evalue', dest='nter_evalue', 
@@ -183,8 +183,6 @@ def main():
             names.append(n)
 
     if args.fasta:
-        print(args.fasta)
-        exit()
         fastas.append(args.fasta)
         names.append("-")
 
@@ -196,10 +194,6 @@ def main():
     
     logging.info("Init N-Ter DB.")
     nterdb = utils.parse_nterdb(args.nterdb)
-    nterfa = tempfile.NamedTemporaryFile(mode="w+")
-    for sid, nter in nterdb.items():
-        nterfa.write(">{}|{}\n{}\n".format(nter[0],sid,nter[1]))
-    nterfa.flush()
     
     # Initital number of sequences.
     _glyx3_nseq = glyx3.hmm.nseq
@@ -208,14 +202,14 @@ def main():
     _gly3_nseq = gly3.hmm.nseq
 
     logging.info("Start search.")
-    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 = search.search(
+    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 , u_nter = search.search(
         fastas,
         names,
         glyx3,
         gly1,
         gly2,
         gly3,
-        nterfa.name,        
+        nterdb,        
         domz = args.domz,
         glyx3_evalue_threshold=1e-30,  
         glyx3_coverage_threshold=args.gly3_coverage_threshold,  
@@ -225,9 +219,9 @@ def main():
         is_iterative=args.iterative_search, 
         is_update_iterative=args.iterative_update,
     )
+   
     logging.info("The search is over.")
-    
-    
+
     logging.info("# Number of calcyanin detected : {}".format(len(calseq.sequences)))
     logging.info("# N_seqs within Glyx3 HMM : {} [+{}]".format(u_glyx3.hmm.nseq, u_glyx3.hmm.nseq -  _glyx3_nseq))
     logging.info("# N_seqs within Gly1 HMM : {} [+{}]".format(u_gly1.hmm.nseq, u_gly1.hmm.nseq - _gly1_nseq))
@@ -250,10 +244,16 @@ def main():
     u_gly2.msa.write(open(msadir+"/Gly2.msa.fa","wb"),format="afa")
     u_gly3.msa.write(open(msadir+"/Gly3.msa.fa","wb"),format="afa")
     
+    logging.info("Dumping N-ter table.")
+    with open(res_dir+"/N-ter-DB.tsv","w") as nterout:
+        for nterid, n in u_nter.items():
+            nterout.write("{}\t{}\t{}\n".format(n[0],nterid,n[1]))
+
     logging.info("Dumping feature table.")
     features = calseq.to_feature_table()
     features.to_csv(res_dir + "/pycalf.features.tsv",sep="\t",header=True,index=True)
     
+
     logging.info("Make summary.")
     summary_datas = []
     for sequence, seq_features_df in features.groupby("sequence_id"):
@@ -262,17 +262,20 @@ def main():
                             seq_features_df[seq_features_df.feature_id.isin(["Gly1","Gly2","Gly3"]) ].sort_values("feature_start").feature_id
                             )
                 )
-        nterom = "".join(set(
-            seq_features_df[seq_features_df.feature_id == "N-ter" ].feature_src
-        ))
-        
-            
+
+        nter_type = None
+        nter_neighbor = None 
+        if not seq_features_df[seq_features_df.feature_id == "N-ter" ].empty:
+            nter_type,nter_neighbor = "".join(set(
+                seq_features_df[seq_features_df.feature_id == "N-ter" ].feature_src
+            )).split("||")
+
         summary_datas.append(
             {
                 "sequence_accession":sequence,
-                "flag":search.decision_tree(nterom.split("|")[0],cterom),
-                "nter":nterom.split("|")[0],
-                "nter_neighbor": nterom.split("|")[1],
+                "flag":search.decision_tree(nter_type,cterom),
+                "nter":nter_type,
+                "nter_neighbor": nter_neighbor,
                 "cter":cterom,
                 "sequence":str(calseq.get_seq_by_id(sequence).seq)
             }

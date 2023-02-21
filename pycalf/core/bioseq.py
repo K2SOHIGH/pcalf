@@ -137,7 +137,7 @@ class Seq(SeqRecord):
     """   
 
     def __init__(self,seqrecord,src=None):      
-        SeqRecord.__init__(self,seq=seqrecord.seq)
+        SeqRecord.__init__(self,seq=seqrecord.seq , features = seqrecord.features)
         self.id = seqrecord.id
         self.name= seqrecord.name        
         self.description = seqrecord.description
@@ -145,6 +145,7 @@ class Seq(SeqRecord):
         self.hits = []
         self.res = {}
         self.sanitize_record()
+        
 
     def sanitize_record(self):
         """Remove gap character from sequence if any (inplace).
@@ -199,8 +200,9 @@ class Seq(SeqRecord):
                 keep = feature_id == f.id
             if keep:
                 fseq.append(
-                    Seq(SeqRecord(seq=f.extract(self.seq),id=self.id,description=f.id))
+                    Seq(SeqRecord(seq=f.extract(self.seq),id=self.id,description=f.id, features = [f] )    )
                 )
+
         return fseq
         
     def per_residue_annotation(self):

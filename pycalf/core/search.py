@@ -98,7 +98,6 @@ def _search_calcyanin(fasta:str,
                 # Clean sequence hits list for next step.
                 seq.hits=[]
                 seq.features.append( f )
-
     # we free some memory.
     del sequences 
     # keep only sequence with a hit against the glyx3 profile with a E-value below and a coverage above E-value and coverage thresholds respectively.

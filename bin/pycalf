@@ -273,6 +273,7 @@ def main():
         summary_datas.append(
             {
                 "sequence_accession":sequence,
+                "sequence_src": "".join(set(seq_features_df.sequence_src.unique())),
                 "flag":search.decision_tree(nter_type,cterom),
                 "nter":nter_type,
                 "nter_neighbor": nter_neighbor,
@@ -280,7 +281,10 @@ def main():
                 "sequence":str(calseq.get_seq_by_id(sequence).seq)
             }
         )
-        pd.DataFrame(summary_datas).set_index("sequence_accession").to_csv(res_dir + "/pycalf.summary.tsv",sep="\t",index=True,header=True)
-
+    if summary_datas:
+        df = pd.DataFrame(summary_datas).set_index("sequence_accession")
+    else:
+        df = pd.DataFrame(columns=["sequence_accession","sequence_src","flag","nter","nter_neighbor","cter","sequence"]).set_index("sequence_accession")
+    df.to_csv(res_dir + "/pycalf.summary.tsv",sep="\t",index=True,header=True)
 if __name__ == "__main__":
     sys.exit(main())

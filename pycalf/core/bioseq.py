@@ -70,8 +70,7 @@ class SequencesIO:
             if len(record.seq) < 10000:
                 sequences.append(Seq(record,src=src))
             else:                
-                logging.warning("Sequence {} seems very long and can't \
-                    be scan through hmmer".format(record.id))
+                logging.warning("Sequence {} seems very long and can't be scan through hmmer".format(record.id))
         return sequences
 
     def to_fasta(self , filehandle ):
@@ -121,8 +120,8 @@ class Hit:
         self.target_len=target_len
         self.start_location = start_location
         self.stop_location = stop_location
-        self.score = score
-        self.identity=identity
+        self.score = float('{:0.3e}'.format(score).strip("'")) if score else score #'{:0.3e}'.format(score) if score else score
+        self.identity= round(identity,3) if identity else identity
         self.coverage = round(coverage,2) if coverage else coverage
         self.method = method
         self.src = src
@@ -449,6 +448,8 @@ class Sequences(SequencesIO):
                         identity = blastp_hit.pident
                     )
                 self.get_seq_by_id(_).addhit(dh)
+            return df
+        return None
 
     def to_feature_table(self,add_sequence=True,feature_id=""):
         """Generate a feature table.
@@ -490,3 +491,35 @@ class Sequences(SequencesIO):
             "sequence_id","sequence_src","feature_type","feature_start","feature_end",
             "feature_id","pident","e-value","feature_src","feature_target_len","feature_seq"
         ]).set_index("sequence_id")
+
+    def to_hits_table(self):
+        """Generate a hits table.
+        
+        Args:
+            self
+        Raises:
+            None
+        Return:
+            pd.DataFrame
+        """          
+        hits_datas = []
+        for seq in self.sequences:
+            for hit in seq.hits:
+                f = [
+                    seq.id,
+                    seq.src,
+                    hit.target_len,                    
+                    hit.start_location,
+                    hit.stop_location,
+                    hit.score,
+                    hit.identity,
+                    hit.coverage,
+                    hit.method,
+                    hit.src
+                ]
+                hits_datas.append(f)
+        return pd.DataFrame(hits_datas,columns=[
+            "sequence_id","sequence_src","hit_target_len","hit_start","hit_stop",
+            "hit_e_value","hit_pident","hit_coverage","hit_method","hit_src"
+        ]).set_index("sequence_id")
+  

@@ -65,11 +65,11 @@ def get_args():
     parser.add_argument('-o', dest='res_dir', type=str, required=True,
                         help='Output directory. pycalf will ouput several files including updated HMMs and MSAs, a feature table and a summary.')   
 
-    parser.add_argument('--iterative-search', action="store_true",
-                        help="If set, HMM profiles and the N-ter database will be updated and another search will be performed until there is no new sequences.")
+    parser.add_argument('--max-iteration', type=int, default = 1,
+                        help="Number of iteration.")
 
     parser.add_argument('--iterative-update', action="store_true",
-                        help="If set, HMM profiles will be updated by aligning one sequence by one sequence.")
+                        help="If set, HMM profiles will be updated by aligning one sequence by one sequence. ")
 
     parser.add_argument('--glyx3-msa', dest = 'glyx3_msa', 
                         default = DATASDIR + "/GlyX3.msa.fa", 
@@ -78,12 +78,12 @@ def get_args():
     parser.add_argument('--domz', dest='domz', type=int, default=10000,
                         help='Sequence space size for hmmsearch (default: %(default)s).')     
 
-    parser.add_argument('--glyx3-coverage', dest='gly3_coverage_threshold', 
+    parser.add_argument('--glyx3-coverage', dest='glyx3_coverage_threshold', 
                         type=float,default=0.6,
                         help="Minimal coverage (default: %(default)s)." )
     
-    parser.add_argument('--glyx3-evalue', dest='gly3_evalue_threshold', 
-                        type=float,default=1e-30,
+    parser.add_argument('--glyx3-evalue', dest='glyx3_evalue_threshold', 
+                        type=float,default=1e-21,
                         help="Glyx3 E-value when considering Glyx3 Hits (default: %(default)s).")
                         
     parser.add_argument('--gly1-msa', dest = 'gly1_msa', 
@@ -202,7 +202,8 @@ def main():
     _gly3_nseq = gly3.hmm.nseq
 
     logging.info("Start search.")
-    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 , u_nter = search.search(
+    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 , u_nter , seq_per_iteration = search.search(
+        res_dir,
         fastas,
         names,
         glyx3,
@@ -211,12 +212,12 @@ def main():
         gly3,
         nterdb,        
         domz = args.domz,
-        glyx3_evalue_threshold=1e-30,  
-        glyx3_coverage_threshold=args.gly3_coverage_threshold,  
+        glyx3_evalue_threshold=args.glyx3_evalue_threshold,  
+        glyx3_coverage_threshold=args.glyx3_coverage_threshold,  
         glyzip_evalue_threshold= args.glyzip_e_evalue,
         nter_coverage_threshold = args.nter_coverage, 
         nter_evalue_threshold  =  args.nter_evalue,
-        is_iterative=args.iterative_search, 
+        max_iteration=args.max_iteration, 
         is_update_iterative=args.iterative_update,
     )
    
@@ -226,7 +227,7 @@ def main():
     logging.info("# N_seqs within Glyx3 HMM : {} [+{}]".format(u_glyx3.hmm.nseq, u_glyx3.hmm.nseq -  _glyx3_nseq))
     logging.info("# N_seqs within Gly1 HMM : {} [+{}]".format(u_gly1.hmm.nseq, u_gly1.hmm.nseq - _gly1_nseq))
     logging.info("# N_seqs within Gly2 HMM : {} [+{}]".format(u_gly2.hmm.nseq, u_gly2.hmm.nseq - _gly2_nseq))
-    logging.info("# N_seqs within Gly3 HMM : {} [+{}]".format(u_gly3.hmm.nseq, u_gly3.hmm.nseq - _glyx3_nseq))
+    logging.info("# N_seqs within Gly3 HMM : {} [+{}]".format(u_gly3.hmm.nseq, u_gly3.hmm.nseq - _gly3_nseq))
     
     logging.info("Dumping HMMs.") 
     hmmdir = os.path.join(res_dir,"HMM")
@@ -278,7 +279,8 @@ def main():
                 "nter":nter_type,
                 "nter_neighbor": nter_neighbor,
                 "cter":cterom,
-                "sequence":str(calseq.get_seq_by_id(sequence).seq)
+                "sequence":str(calseq.get_seq_by_id(sequence).seq),
+                "iteration":seq_per_iteration[sequence]
             }
         )
     if summary_datas:

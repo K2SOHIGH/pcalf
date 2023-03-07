@@ -1,6 +1,7 @@
 
 import sys
 import re
+import os
 import logging
 import tempfile
 import concurrent
@@ -40,7 +41,9 @@ def _search_calcyanin(fasta:str,
                     glyx3_coverage_threshold:float=0.5,
                     glyzip_evalue_threshold:float=3.6e-4,
                     nter_coverage_threshold:float = 0.80, 
-                    nter_evalue_threshold:float = 1e-07):
+                    nter_evalue_threshold:float = 1e-07,
+                    tmp_dir = None,
+                    ):
     """Find calcyanin within a fasta file using several HMM profiles and 'database' of known N-ter.
     
     Args:
@@ -51,9 +54,12 @@ def _search_calcyanin(fasta:str,
         gly2_hmm (pyhmmer.plan7.HMM): Gly2 HMM profile - required
         gly3_hmm (pyhmmer.plan7.HMM): Gly3 HMM profile - required
         nter_fa (str): Path to fasta file containing known N-ter sequences - required
-
-        glyx3_evalue_threshold (float): E-value threshold for glyx3 
-        glyx3_coverage_threshold (float): Coverage theshold for glyx3
+        glyx3_evalue_threshold (float): E-value threshold for glyx3.
+        glyx3_coverage_threshold (float): Coverage theshold for glyx3.
+        glyzip_evalue_threshold (float): E-value threshold for glycine zipper 3.6e-4.
+        nter_coverage_threshold (float): Coverage threshold for blastp. 
+        nter_evalue_threshold (float): E-value threshold for blastp.
+        tmp_dir (str): path to a directory where raw results (i.e , before filtering steps) will be stored.
 
     Raises:
         TypeError if one sequence is not an instance of pyhmmer.easel.DigitalSequence.
@@ -61,15 +67,21 @@ def _search_calcyanin(fasta:str,
     Return:
         Hmm object
     """
+    if tmp_dir:
+        tmp_dir = os.path.join(tmp_dir, src )
+        os.makedirs(tmp_dir, exist_ok=True)
+
     # Setup sequences - Parse fasta into Sequences object 
     sequences = Sequences(fasta,src=src)
+    
         
     # Search sequences against GlyX3 profile
     glyx3_sequences = sequences.hmmsearch([glyx3_hmm])
+    glyx3_sequences.to_hits_table().to_csv(os.path.join(tmp_dir,"glyx3.hits.tsv"),sep="\t",header=True,index=True)
     for seq in glyx3_sequences.sequences:
         # We filter hits based on their e-value and the total coverage against the GlyX3 HMM profile.
+
         hit_below_evalue_threshold = [ h for h in seq.hits if h.score < glyx3_evalue_threshold]     
-        # E-VALUE THRESHOLD
         if hit_below_evalue_threshold:          
             start_glyx3 = min([h.start_location for h in hit_below_evalue_threshold])
             end_glyx3 = max([h.stop_location for h in hit_below_evalue_threshold])
@@ -98,6 +110,7 @@ def _search_calcyanin(fasta:str,
                 # Clean sequence hits list for next step.
                 seq.hits=[]
                 seq.features.append( f )
+
     # we free some memory.
     del sequences 
     # keep only sequence with a hit against the glyx3 profile with a E-value below and a coverage above E-value and coverage thresholds respectively.
@@ -107,7 +120,7 @@ def _search_calcyanin(fasta:str,
     # Search GlyZip profiles
     glzips_easel_hmm = [gly1_hmm,gly2_hmm,gly3_hmm]
     glyx3_sequences = glyx3_sequences.hmmsearch(glzips_easel_hmm)
-    
+    glyx3_sequences.to_hits_table().to_csv(os.path.join(tmp_dir,"glyzips.hits.tsv"),sep="\t",header=True,index=True)
     for seq in glyx3_sequences.sequences:
         # Hit filtering and features creation.
         seq.per_residue_annotation()
@@ -161,7 +174,11 @@ def _search_calcyanin(fasta:str,
         seq.hits = []
 
     # Search N-ter
-    glyx3_sequences.blastp(nter_fa)
+    blastp_raw_results = glyx3_sequences.blastp(nter_fa)
+    if  blastp_raw_results is not None:
+        if not blastp_raw_results.empty:
+            glyx3_sequences.to_hits_table().to_csv(os.path.join(tmp_dir,"nter.hits.tsv"),sep="\t",header=True,index=True)
+
     for seq in glyx3_sequences.sequences:
         for valid_nter_hit in seq.hits:
             # E-value and coverage filtering.
@@ -208,7 +225,8 @@ def _search_calcyanin_concurrent(fastas:list,
                     glyx3_coverage_threshold:float=0.5,
                     glyzip_evalue_threshold:float=3.6e-4,
                     nter_coverage_threshold:float = 0.80, 
-                    nter_evalue_threshold:float = 1e-07):
+                    nter_evalue_threshold:float = 1e-07,
+                    tmp_dir = None):
     """Wrapper to run multiple file at once with the function _search_calcyanin.
     
     Args:
@@ -253,6 +271,7 @@ def _search_calcyanin_concurrent(fastas:list,
             glyzip_evalue_threshold,
             nter_coverage_threshold, 
             nter_evalue_threshold,
+            tmp_dir
             )
         )
     
@@ -349,6 +368,7 @@ def parse_nterdb(nterdb):
     return nter_dict
 
 def search(
+        out:str,
         fastas:list, 
         srcs:list,
         glyx3:Hmm, 
@@ -362,8 +382,8 @@ def search(
         glyzip_evalue_threshold:float=3.6e-4,
         nter_coverage_threshold:float = 0.80, 
         nter_evalue_threshold:float = 1e-07,
-        is_iterative:bool=True, 
-        is_update_iterative:bool=True): 
+        max_iteration:int=1,
+        is_update_iterative:bool=False): 
     """Search for calcyanin within one or more fasta files using several HMM profiles and 'database' of known N-ter.
 
     If is_iterative is set , then HMMs profiles and N-ter database is updated at each iteration with new calcyanin if any.
@@ -380,7 +400,8 @@ def search(
         nter_fa (str): Path to fasta file containing known N-ter sequences - required
         glyx3_evalue_threshold (float): E-value threshold for glyx3 
         glyx3_coverage_threshold (float): Coverage theshold for glyx3
-        is_iterative (bool): If set iterative 
+        max_iteration (int): Number of iteration 
+        is_update_iterative (bool): Update hmm sequence by sequence.
     Raises:
         TypeError if one sequence is not an instance of pyhmmer.easel.DigitalSequence.
     Return:
@@ -389,17 +410,14 @@ def search(
 
     
     not_converged = True
-    lseqs = []
-    logging.info("Iterative : {}".format(is_iterative))
-    max_iteration = 1
-    if is_iterative:
-        max_iteration=10        
-        logging.info("Max Iteration : {}".format(max_iteration))
-    ite=0
-
+    logging.info("Max Iteration : {}".format(max_iteration))
+    
+    ite=0    
+    seq_per_iteration = {}
     logging.info("Number of sequences in the N-ter database at start : {}".format(len(nterdb)))
 
     while not_converged:
+        tmp_dir = os.path.join(out,"tmp","iteration_{}".format(ite))
         logging.info("Dump Nter DB as fasta.")
         nterfa = tempfile.NamedTemporaryFile(mode="w+")
         for sid, nter in nterdb.items():
@@ -420,41 +438,47 @@ def search(
                 glyzip_evalue_threshold,
                 nter_coverage_threshold, 
                 nter_evalue_threshold,
+                tmp_dir
             )
         not_converged=False       
+        new_calc = 0
         if calcyanin_sequences.sequences:            
-            for seq in calcyanin_sequences.sequences:
-                if seq.id not in lseqs:                          
-                    lseqs.append(seq.id)         
+            for seq in calcyanin_sequences.sequences:                 
+                if seq.id not in seq_per_iteration:                                              
+                    seq_per_iteration[seq.id] = ite
+                    new_calc+=1
                     not_converged=True
                   
         if not_converged:
-            logging.info("[iteration {}] | New calcyanin found ! :)".format(ite))        
-            logging.info("[iteration {}] |  Updating GlyX3".format(ite))
+            logging.info("[iteration {}] | New calcyanin found [+{}] ! :)".format(ite , new_calc))                    
             glyx3features = calcyanin_sequences.get_feature("GlyX3")
             if glyx3features:  
+                logging.info("[iteration {}] |  Updating GlyX3".format(ite))
                 glyx3 = update_hmm(glyx3features,glyx3,is_update_iterative)
 
-            logging.info("[iteration {}] |  Updating Gly1".format(ite))
+            
             gly1features = calcyanin_sequences.get_feature("Gly1")        
             if gly1features:
+                logging.info("[iteration {}] |  Updating Gly1".format(ite))
                 gly1 = update_hmm(gly1features,gly1,is_update_iterative)
   
-            logging.info("[iteration {}] |  Updating Gly2".format(ite))
+            
             gly2features = calcyanin_sequences.get_feature("Gly2")        
             if gly2features:
+                logging.info("[iteration {}] |  Updating Gly2".format(ite))
                 gly2 = update_hmm(gly2features,gly2,is_update_iterative)
 
-            logging.info("[iteration {}] |  Updating Gly3".format(ite))
+            
             gly3features = calcyanin_sequences.get_feature("Gly3")        
             if gly3features:
+                logging.info("[iteration {}] |  Updating Gly3".format(ite))
                 gly3 = update_hmm(gly1features,gly3,is_update_iterative)
 
-            logging.info("[iteration {}] |  Updating N-ter".format(ite))
+            
             
             nterfeatures = calcyanin_sequences.get_feature("N-ter")
-            if nterfeatures:
-                
+            if nterfeatures:                
+                logging.info("[iteration {}] |  Updating N-ter".format(ite))
                 for nf in tqdm.tqdm(nterfeatures,colour="yellow"):
                     ntype,src = nf.features[0].qualifiers["src"].split("||")
                     idt = nf.features[0].qualifiers["identity"]                    
@@ -470,11 +494,10 @@ def search(
                 logging.warning("Max iteration reached.")
                 not_converged=False
         else:
-            
             logging.info("[iteration {}] | No new calcyanin detected.".format(ite))
             logging.info("[iteration {}] | Stop.".format(ite))
     
-    return calcyanin_sequences, glyx3 , gly1, gly2, gly3 , nterdb
+    return calcyanin_sequences, glyx3 , gly1, gly2, gly3 , nterdb , seq_per_iteration
 
             
 def decision_tree(nter , cter):

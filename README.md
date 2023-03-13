@@ -17,7 +17,6 @@ Potential calcyanins are searched in a set of amino acid sequences using a weigh
 - biopython
 - numpy==1.22.4
 - tqdm
-- pdoc3
 - blast
 ```
  

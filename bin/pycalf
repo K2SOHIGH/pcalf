@@ -17,6 +17,7 @@
 
 
 import argparse
+import gzip
 import os
 import sys
 import shutil
@@ -54,13 +55,9 @@ def get_args():
     """,
         formatter_class= argparse.RawTextHelpFormatter
     )
-    parser.add_argument('-f','--fasta', dest='fasta', type = str,#argparse.FileType('rt'), 
-                        #default=(None if sys.stdin.isatty() else sys.stdin),
-                        help='Input fasta file. Gzip file are not supported but you can pass them from stdin')
-                       
     parser.add_argument('-i','--input', dest='input', 
-                        type = argparse.FileType('r'), default=None,
-                        help='Tabular file with name\t/path/to/file as lines. If you have multiple file to scan through pycalf you should go for this way. [fasta files specified can be compressed].')
+                        type = str, default=None,
+                        help="Either a fasta file [gzip supported] or a tabular file with one file \"designation\tfile path\" per line.")
                                   
     parser.add_argument('-o', dest='res_dir', type=str, required=True,
                         help='Output directory. pycalf will ouput several files including updated HMMs and MSAs, a feature table and a summary.')   
@@ -170,21 +167,35 @@ def main():
             exit(-1)
     
 
-    if (args.fasta and args.input) or (not args.fasta and not args.input) :
-        logging.error("Come on, please choose one between --fasta and --input-file...")
-        exit(-1)
+    # if (args.fasta and args.input) or (not args.fasta and not args.input) :
+    #     logging.error("Please choose one between --fasta and --input-file...")
+    #     exit(-1)
 
     fastas = []
     names = []
-    if args.input:        
-        for line in args.input.readlines():
-            n,f = line.strip().split()
-            fastas.append(f)
-            names.append(n)
+    if not args.input.endswith(".gz"): 
+        with open(args.input,'r') as stream:   
+            for line in stream.readlines():
+                # Check if not a fasta file
+                if not line.startswith(">"):
+                    n,f = line.strip().split()
+                    fastas.append(f)
+                    names.append(n)
+                else: # Fasta file
+                    fastas.append(args.input)
+                    names.append(os.path.basename(args.input))
+                    break
+    else: 
+        with gzip.open(args.input ,'rt') as stream:
+            for line in stream.readlines():
+                # Check if not a fasta file
+                if not line.startswith(">"):
+                    logger.error("{} is not a fasta file.".format(args.input))
+                else:
+                    fastas.append(args.input)
+                    names.append(os.path.basename(args.input))
+                    break
 
-    if args.fasta:
-        fastas.append(args.fasta)
-        names.append("-")
 
     logging.info("Init HMMs.")
     glyx3 = biohmm.Hmm("Glyx3",args.glyx3_msa)

@@ -38,7 +38,7 @@ CDS in fasta format (faa) [gzip or not] or a tabular file with  one "file design
 
 ```bash
 mamba create -n pycalf -c bioconda blast pyhmmer pandas numpy pdoc3 biopython tqdm python=3.9 && conda activate pycalf;
-pip3 install git@github.com:K2SOHIGH/pycalf2.0.git
+pip3 install https://github.com/K2SOHIGH/py-CalF.git
 ```
 
 ## USAGE

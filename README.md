@@ -1,4 +1,4 @@
-[py-calf](https://k2sohigh.github.io/py-calf/) stand for python CALcyanin Finder. 
+py-calf stand for python CALcyanin Finder. 
 
             _ (.".) _    
            '-'/. .\'-'   

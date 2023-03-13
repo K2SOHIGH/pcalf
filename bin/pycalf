@@ -187,22 +187,28 @@ def main():
                     break
     else: 
         with gzip.open(args.input ,'rt') as stream:
-            for line in stream.readlines():
-                # Check if not a fasta file
-                if not line.startswith(">"):
-                    logger.error("{} is not a fasta file.".format(args.input))
-                else:
+            for line in stream.readlines():                
+                if not line.startswith(">"): # Not a fasta file
+                    logging.error("{} is not a fasta file.".format(args.input))
+                else: # fasta file 
                     fastas.append(args.input)
                     names.append(os.path.basename(args.input))
                     break
 
 
-    logging.info("Init HMMs.")
+    logging.info("Init HMMs from MSAs.")    
     glyx3 = biohmm.Hmm("Glyx3",args.glyx3_msa)
     gly1 = biohmm.Hmm("Gly1",args.gly1_msa)
     gly2 = biohmm.Hmm("Gly2",args.gly2_msa)
     gly3 = biohmm.Hmm("Gly3",args.gly3_msa)
     
+    logging.info("Increase Glycine weight.")
+    glyx3.hmm = search.increase_glycine_weight( glyx3,0.2 )
+    gly1.hmm  = search.increase_glycine_weight( gly1,0.2 )
+    gly2.hmm  = search.increase_glycine_weight( gly2,0.2 )
+    gly3.hmm  = search.increase_glycine_weight( gly3,0.2 )
+
+
     logging.info("Init N-Ter DB.")
     nterdb = search.parse_nterdb(args.nterdb)
     

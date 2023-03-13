@@ -4,7 +4,7 @@
               `"-"`  
 
 
-[py-calf](https://k2sohigh.github.io/py-CalF/) stand for python CALcyanin Finder. 
+[py-calf](https://k2sohigh.github.io/py-calf/) stand for python CALcyanin Finder. 
 
 Benzerara, K., Duprat, E., Bitard-Feildel, T., Caumes, G., Cassier-Chauvat, C., Chauvat, F., ... & Callebaut, I. (2022). A new gene family diagnostic for intracellular biomineralization of amorphous Ca carbonates by cyanobacteria. Genome Biology and Evolution, 14(3), evac026. [DOI:https://doi.org/10.1093/gbe/evac026](https://doi.org/10.1093/gbe/evac026)
 

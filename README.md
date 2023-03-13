@@ -44,4 +44,4 @@ pip3 install https://github.com/K2SOHIGH/py-CalF.git
 pycalf -i fasta.cds.fa.gz -o pycalf_res
 ```
 
-pydoc documentation is availbable [here](https://k2sohigh.github.io/py-calf/docs/index.html).
+pydoc documentation is availbable [here](https://k2sohigh.github.io/py-calf/docs/pydoc-index.html).

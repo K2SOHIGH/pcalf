@@ -26,11 +26,9 @@ import multiprocessing
 from importlib import resources
 import pandas as pd
 
-from pcalf import datas as pcalf_datas
-from pcalf.core import search,bioseq,biohmm
-from pcalf.utils import log
 
-
+import pcalf.datas
+from pcalf.core import search,bioseq,biohmm,log
 
 
 logging.basicConfig(
@@ -39,8 +37,8 @@ logging.basicConfig(
     handlers=[]
 )
 
-DATASDIR = os.path.join(resources.files(pcalf_datas))
-print(DATASDIR)
+DATASDIR = os.path.join(resources.files(pcalf.datas))
+
 def get_args():
     parser = argparse.ArgumentParser(
         description="""pcalf

@@ -1,0 +1,10 @@
+name: ncbi_datasets
+channels:
+  - default
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - ncbi-datasets-cli
+
+prefix: /Users/mmillet/miniconda3/envs/ncbi_datasets

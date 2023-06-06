@@ -1,0 +1,11 @@
+res_dir: "wpcalf_datas"
+accession_file: null
+dev_mode: false
+group: bacteria
+section:
+- genbank
+- refseq
+taxid: 1126
+update: false
+exclude_accession: 
+include_accession:

@@ -1,0 +1,10 @@
+name: biopython
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - biopython=1.79
+  - pandas
+  - tqdm
+  - lxml

@@ -28,6 +28,8 @@ setup(
          "snakemake==7.22",
          "pandas==1.5.3",
          "tqdm==4.64.1",
+         "plotly==5.11.0",
+         "python-igraph==0.10.4",
     ],
     python_requires = ">=3.9",
     packages = find_packages(where="src"),

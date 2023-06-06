@@ -66,8 +66,10 @@ class SequencesIO:
         assert isinstance(fhl,io.TextIOWrapper)
 
         sequences = []
+        #'ACDEFGHIKLMNPQRSTVWY-BJZOUX*~'
         for record in SeqIO.parse(fhl,format="fasta"):
             if len(record.seq) < 10000:
+                record.seq = record.seq.strip()
                 sequences.append(Seq(record,src=src))
             else:                
                 logging.warning("Sequence {} seems very long and can't be scan through hmmer".format(record.id))
@@ -120,7 +122,7 @@ class Hit:
         self.target_len=target_len
         self.start_location = start_location
         self.stop_location = stop_location
-        self.score = float('{:0.3e}'.format(score).strip("'")) if score else score #'{:0.3e}'.format(score) if score else score
+        self.score = float('{:0.3e}'.format(score).strip("'")) if score else score
         self.identity= round(identity,3) if identity else identity
         self.coverage = round(coverage,2) if coverage else coverage
         self.method = method
@@ -199,9 +201,8 @@ class Seq(SeqRecord):
                 keep = feature_id == f.id
             if keep:
                 fseq.append(
-                    Seq(SeqRecord(seq=f.extract(self.seq),id=self.id,description=f.id, features = [f] )    )
+                    Seq(SeqRecord(seq=f.extract(self.seq),id=self.id, description="", features = [f] )    )
                 )
-
         return fseq
         
     def per_residue_annotation(self):
@@ -224,25 +225,7 @@ class Seq(SeqRecord):
                 if not self.res[aa]:
                     self.res[aa] = []#                
                 self.res[aa].append(hit)
-                #self.res[aa].evalue.append(hit.score)   
-    
-    # def _keep_best_annotation(self):
-    #     """helper function to keep only the best hit
-        
-    #     Args:
-    #         None
-    #     Raises:
-    #         None
-    #     Return:
-    #         None
-    #     """
-    #     b = []
-    #     for _ , residue in self.res.items():
-    #         if residue:
-    #             b.append(residue.keep_best())
-    #         else:
-    #             b.append("-")
-    #     return b 
+
 
     def addhit(self,hit):
         """Add Hit object to Seq.
@@ -364,7 +347,7 @@ class Sequences(SequencesIO):
             if not isinstance(hmm, pyhmmer.plan7.HMM):
                 raise TypeError("Except pyhmmer.plan7.HMM but received".format(type(hmm)))
 
-        hits = pyhmmer.hmmsearch(hmms,self.digitize(alphabet),cpus=cpus)
+        hits = pyhmmer.hmmsearch(hmms,self.digitize(alphabet),cpus=cpus,**kwargs)
         hmm_datas = [(h.name.decode("UTF-8"),h.M)  for h in hmms]
         seq_with_hit = []
         for hmm_datas , hit_by_hmm in zip(hmm_datas,hits):
@@ -390,10 +373,8 @@ class Sequences(SequencesIO):
                         )
                     seq.addhit(dh)
 
+        return self
 
-        sequences_with_hit = Sequences()
-        sequences_with_hit.sequences = [self.get_seq_by_id(sid) for sid in seq_with_hit]
-        return sequences_with_hit
 
 
     def blastp(self,blast_subject_fasta,evalue=1e-4,outfmt="10 std slen"):   
@@ -428,7 +409,7 @@ class Sequences(SequencesIO):
 
         o = subprocess.run(" ".join(command) , capture_output=True , shell=True)         
         res = o.stdout.decode('ascii').strip()
-
+        sequences = Sequences() # create a new sequence object that will store sequences with at least one hit
         if res:
             df = pd.read_table( StringIO(res)  , sep=","  , header=None )          
             df.columns = "qacc sacc pident length mismatch gapopen qstart qend sstart send evalue bitscore slen".split(" ")
@@ -448,8 +429,7 @@ class Sequences(SequencesIO):
                         identity = blastp_hit.pident
                     )
                 self.get_seq_by_id(_).addhit(dh)
-            return df
-        return None
+        return self        
 
     def to_feature_table(self,add_sequence=True,feature_id=""):
         """Generate a feature table.
@@ -478,6 +458,7 @@ class Sequences(SequencesIO):
                         feature.location.end,
                         feature.id,
                         feature.qualifiers["identity"],
+                        feature.qualifiers["coverage"],
                         feature.qualifiers["score"],
                         feature.qualifiers["src"],
                         feature.qualifiers["src_len"]
@@ -489,7 +470,7 @@ class Sequences(SequencesIO):
                     features.append(f)
         return pd.DataFrame(features,columns=[
             "sequence_id","sequence_src","feature_type","feature_start","feature_end",
-            "feature_id","pident","e-value","feature_src","feature_target_len","feature_seq"
+            "feature_id","pident","coverage","e-value","feature_src","feature_target_len","feature_seq"
         ]).set_index("sequence_id")
 
     def to_hits_table(self):

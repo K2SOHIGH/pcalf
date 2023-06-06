@@ -18,10 +18,10 @@ class CustomFormatter(logging.Formatter):
     lightpurple = "\x1b[38;5;69m" #[38;5;141m" #"\x1b[38;5;84m"
     pink90 = "\x1b[38;5;162m" #"\x1b[38;5;214m"
     
-    format = "PCALF | %(message)s"
+    format = "PCALF | [%(levelname)s] %(message)s"
     
     FORMATS = {
-        logging.DEBUG: reset + format + reset,
+        logging.DEBUG: green + format + reset,
         logging.INFO: lightpurple + format + reset,
         logging.WARNING: pink90 + format + reset,
         logging.ERROR: bold_red + format + reset,
@@ -33,29 +33,3 @@ class CustomFormatter(logging.Formatter):
         formatter = logging.Formatter(log_fmt)
         return formatter.format(record)
 
-
-
-# def setlogger(name="__main__",level="INFO"):
-#     logger = logging.Logger(name)    
-#     logger.setLevel(level)
-#     logger.addHandler(
-#         stream_handler(level)
-#     )
-
-#     return logger
-
-# def file_handler(logfile,level):
-#     dirname = os.path.abspath(
-#         os.path.dirname(logfile)
-#     )
-#     os.makedirs(dirname,exist_ok=True)
-#     handler = logging.FileHandler( logfile , mode = 'a' )
-#     handler.setFormatter( CustomFormatter() )
-#     handler.setLevel(level)
-#     return handler
-
-# def stream_handler(level):
-#     handler = logging.StreamHandler( )
-#     handler.setFormatter( CustomFormatter() )
-#     handler.setLevel(level)
-#     return handler

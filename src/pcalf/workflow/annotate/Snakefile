@@ -1,0 +1,57 @@
+configfile: "config/config.yaml" 
+
+import os
+import yaml
+import logging
+import glob
+from datetime import date
+
+
+RESDIR = config["global"]["res_dir"]
+INPUT  = yaml.load(open(str(config["global"]["input"])) , Loader = yaml.SafeLoader) 
+QUICK  = config["global"]["skip_genome_workflow"]
+
+def _2batches(bins,batch_size):    
+    batches = {}
+    bid = 0
+    for x in range(0,len(bins.keys()),batch_size):
+        bid += 1
+        bins_in_batch = list(bins.keys())[x:x+batch_size]
+        batches["batch_"+str(bid)] = {b:bins[b]  for b in bins_in_batch  } 
+    return batches
+
+
+def genomes_into_batches():
+    genomes = {gid:files["genome"] for gid,files in INPUT.items()}   
+    batches = _2batches(genomes, config["config-genomes"]["batch_size"])        
+    return batches
+
+GENOMESBATCH = genomes_into_batches()
+
+def workflow_output_files(wildcards):
+    # mandatory files
+    files = [                
+        os.path.join(RESDIR , "pcalf" , "pcalf.done" ),
+        os.path.join(RESDIR , "ncbi-datas" , "ncbi_metadatas.tsv"),        
+    ]
+    
+    # optional files depending on the value of QUICK
+    if not QUICK:
+        files.append(os.path.join(RESDIR,"checkm-res","checkm.done"))
+        files.append(os.path.join(RESDIR,"gtdbtk-res","gtdbtk.done"))
+    else:
+        files.append(os.path.join(RESDIR,"checkm-res","checkm.quick.done"))
+        files.append(os.path.join(RESDIR,"gtdbtk-res","gtdbtk.quick.done"))
+        #files.append(os.path.join(RESDIR , "gtdbtk-res","gtdbtk.ar53.bac120.summary.clean.tsv"))
+    
+    return files
+
+include: "rules/pcalf.smk"
+include: "rules/checkm.smk"
+include: "rules/gtdbtk.smk"
+include: "rules/ncbi_metadatas.smk"
+
+rule all:
+    input:
+        workflow_output_files, 
+

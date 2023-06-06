@@ -1,8 +1,0 @@
-name: checkm
-channels:
-  - bioconda
-  - defaults
-dependencies:
-  - checkm-genome=1.2
-prefix: /trinity/home/mmillet/.conda/envs/checkm
-

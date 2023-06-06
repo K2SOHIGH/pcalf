@@ -1,0 +1,40 @@
+import argparse
+import logging
+import importlib.resources as resources
+
+
+
+from pcalf.core import log
+from pcalf.core import HarleyDB
+from pcalf.report import render
+
+def get_args():
+    parser = argparse.ArgumentParser(
+        description="""
+
+    pcalf-dataset
+    Retrieve genome and annotation from GenBank and RefSeq using NCBI accession or NCBI taxid
+
+    """,
+        formatter_class= argparse.RawTextHelpFormatter
+    )
+    parser.add_argument("--db",help="Sqlite3 file produced by pcalf-annotate-workflow")
+    parser.add_argument("--out",help="Output file")
+
+def main(): 
+    args = get_args()
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(log.CustomFormatter())
+    logging.addHandler(
+        console
+    )
+    if not HarleyDB.HarleyDB(args.db).is_schema_valid():
+        logging.error("Current database schema is different from the schema of the database you provide.")
+        exit(-1)
+
+    templatedir = resources.files(render.__package__)    
+    render.render(args.db,
+                  templatedir,
+                  args.out)
+

@@ -108,7 +108,6 @@ This command produce an HTML report from a sqlite3 database produced by [pcalf a
 ### Workflow : 
 
 ![Workflow description](./pcalf.svg)
-<img src="./pcalf.svg">
 
 
 

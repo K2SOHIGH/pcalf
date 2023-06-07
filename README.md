@@ -72,17 +72,17 @@ GC#_######.#:
 
 ### pcalf-annotate-workflow : 
 
-pcalf-annotate-workflow is actually the workflow that will help you recovere calcyanin proteins and ccyA genes from a set of genomes.
+pcalf-annotate-workflow is actually the workflow that will help you recover calcyanin proteins and ccyA genes from a set of genomes.
 This workflow is composed of multiple steps :
 - genome taxonomic classification using [GTDB-TK V2](https://github.com/Ecogenomics/GTDBTk)
 - genome quality assessment using [CheckM](https://github.com/Ecogenomics/CheckM/)
-- calcyanin detection using pcalf
+- calcyanin detection using [pcalf](#paclf-)
 - calcyanin / ccyA linking using a specific python script.
 - NCBI metadatas recovery using [NCBI](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/)
 
 Note, that GTDB-TK and checkM requires external databases, respectively [GTDB](https://gtdb.ecogenomic.org/downloads) and [CheckM datas](https://data.ace.uq.edu.au/public/CheckM_databases). In addition, it's advised to run GTDB-TK and CheckM on a cluster like slurm. Because pcalf-annotate-workflow rely on snakemake you can easily provide a snakemake profile through the --snakargs option to run it on your favorite cluster. On the other hand, you can skip the genome taxonomic classification and the quality assessment with the --quick flag.
 
-pcalf-annotate-workflow take as input a yaml file with a specific format, see [pcalf-datasets-workflow](###pcalf-datasets-workflow) for details.
+pcalf-annotate-workflow take as input a yaml file with a specific format, see [pcalf-datasets-workflow](#pcalf-datasets-workflow-) for details.
 
 The workflow produced several files for each step but the final output is a sqlite3 database storing multiple table: 
 - genome
@@ -97,7 +97,7 @@ The workflow produced several files for each step but the final output is a sqli
 
 ### pcalf-report : 
 
-This command produce an HTML report from a sqlite3 database produced by [pcalf annotate workflow](###pcalf-annotate-workflow).
+This command produce an HTML report from a sqlite3 database produced by [pcalf annotate workflow](#pcalf-annotate-workflow-).
 
 
 ### Workflow : 

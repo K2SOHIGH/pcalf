@@ -82,7 +82,7 @@ This workflow is composed of multiple steps :
 
 Note, that GTDB-TK and checkM requires external databases, respectively [GTDB](https://gtdb.ecogenomic.org/downloads) and [CheckM datas](https://data.ace.uq.edu.au/public/CheckM_databases). In addition, it's advised to run GTDB-TK and CheckM on a cluster like slurm. Because pcalf-annotate-workflow rely on snakemake you can easily provide a snakemake profile through the --snakargs option to run it on your favorite cluster. On the other hand, you can skip the genome taxonomic classification and the quality assessment with the --quick flag.
 
-pcalf-annotate-workflow take as input a yaml file with a specific format, see [pcalf-datasets-workflow](###pcalf-datasets-workflow) for details.
+pcalf-annotate-workflow take as input a yaml file with a specific format, see [pcalf-datasets-workflow](#pcalf-datasets-workflow) for details.
 
 The workflow produced several files for each step but the final output is a sqlite3 database storing multiple table: 
 - genome
@@ -97,7 +97,7 @@ The workflow produced several files for each step but the final output is a sqli
 
 ### pcalf-report : 
 
-This command produce an HTML report from a sqlite3 database produced by [pcalf-annotate-workflow](###pcalf-annotate-workflow).
+This command produce an HTML report from a sqlite3 database produced by [pcalf-annotate-workflow](#pcalf-annotate-workflow).
 
 
 ### Workflow : 

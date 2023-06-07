@@ -1,6 +1,6 @@
 # PCALF
 
-<img src="bacIcon.svg" alt="drawing" width="150" style="float:left;margin-right:20px"/>
+<img src="./bacIcon.svg" alt="bacIcon" width="150" style="float:left;margin-right:20px"/>
 
  
 
@@ -20,7 +20,7 @@ its N-terminus type and its C-terminus modular organization.
 ## Decision tree
 
 <!-- ![Workflow description](./decision_tree.jpeg) -->
-<img src="decision_tree.jpeg" alt="decision_tree" width="100%"/>
+<img src="./decision_tree.jpeg" alt="decision_tree" width="100%"/>
 
 ## Dependencies :
 ```       

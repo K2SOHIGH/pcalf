@@ -15,7 +15,7 @@ its N-terminus type and its C-terminus modular organization.
 
 ## Decision tree
 
-*picture here*
+![Workflow description](./decision_tree.jpeg)
 
 ## Dependencies :
 ```       

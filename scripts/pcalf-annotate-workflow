@@ -7,6 +7,7 @@ import os
 import logging
 from importlib import resources
 import datetime
+import multiprocessing
 
 import pandas as pd
 
@@ -29,14 +30,14 @@ def get_args():
     parser = argparse.ArgumentParser(
         description="""
 
-    pcalf-dataset
-    Retrieve genome and annotation from GenBank and RefSeq using NCBI accession or NCBI taxid
+    pcalf-annotate
+    Annotate genomes using pcalf, GTDB-TK, CheckM and ncbi-datasets CLI.
 
     """,
         formatter_class= argparse.RawTextHelpFormatter
     )
     parser.add_argument('-i', '--input', required=True , type=str , 
-            help = "Yaml file containing path to genome, cds_faa and cds_fna.")  
+            help = "Yaml file containing path to genome, cds_faa and cds_fna, see README.md for details.")  
        
     parser.add_argument('--db', type=None , 
             help = "An sqlite3 database produced by pcalf-workflow. If provided, new datas will be appended to it.")
@@ -46,13 +47,13 @@ def get_args():
             help = "Where datas such as checkm, gtdb-tk or pcalf results will be stored.")
 
     parser.add_argument("--gtdb", default=None , type=str , 
-            help = "path to GTDB. [None]")
+            help = "path to GTDB database. [None]")
     
     parser.add_argument("--checkm", default=None , type=str , 
             help = "path to checkm datas. [None]")
 
     parser.add_argument('-q', '--quick', default=False, action="store_true", 
-            help = ".. explain here .. [False]")
+            help = "If set CheckM and GTDB-TK steps will not be run [False]")
 
     parser.add_argument('--force', action="store_true", 
            help= "Use this flag if you want to resume jobs from a specific instance. [False]" )
@@ -63,7 +64,7 @@ def get_args():
     parser.add_argument("--debug", action="store_true")
 
     parser.add_argument('--snakargs', type=str, 
-              default="--printshellcmds -j1 --use-conda",
+              default="--printshellcmds -j{} --use-conda".format(multiprocessing.cpu_count()),
               help='Snakemake arguments.')
 
     args = parser.parse_args()

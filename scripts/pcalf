@@ -21,15 +21,9 @@ DATASDIR = os.path.join(resources.files(datas))
 
 def get_args():
     parser = argparse.ArgumentParser(
-        description="""pcalf
-                        
-    pcalf stand for Python CALcyanin Finder
-
-    The input fasta file(s) will be scanned following three steps:
-    - First a specific HMM profile of the glycine triplication is searched using HMMSEARCH and only sequence with a hit above coverage and E-value threshold are retained.
-    - Secondly, those sequences are more precisely annotated using specifics HMM profiles for each glycine zipper in order to define their modular organization for their C-ter extremity.
-    - Finally, a set of known N-ter is blasted against them and the nearest neighbor is retained as (potential) N-ter type.
-    
+        description="""                        
+    pcalf 
+    Search calcyanin protein in one or multiple files containing CDS.
     """,
         formatter_class= argparse.RawTextHelpFormatter
     )

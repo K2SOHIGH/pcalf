@@ -32,7 +32,7 @@ its N-terminus type and its C-terminus modular organization.
 
 ## External dependency :
 ```
-  ncbi-blast
+  blast
 ```
 
 ## INSTALLATION
@@ -60,7 +60,7 @@ This command can be used to look quickly for the presence of calcyanin in a set 
 pcalf-datasets-workflow can be used to retrieve genomes from NCBI databases such as RefSeq and GenBank based on accession (GC*_******.*) or TaxID
 Genomes and annotations (CDS and genes ) will be downloaded using the new command line tools from [NCBI](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/download-and-install/). If annotations does not exists for a genome, then genes and CDS will be predicted with [Prodigal](https://github.com/hyattpd/Prodigal).
 
-A yaml file is also produced and can be used as input for pcalf-annotate-workflow command.
+A yaml file is also produced and can be used as input for [pcalf-annotate-workflow](#pcalf-annotate-workflow-).
 ```
 GC*_******.*:
   genome : /path/to/genome
@@ -85,15 +85,20 @@ Note, that GTDB-TK and checkM requires external databases, respectively [GTDB](h
 pcalf-annotate-workflow take as input a yaml file with a specific format, see [pcalf-datasets-workflow](#pcalf-datasets-workflow-) for details.
 
 The workflow produced several files for each step but the final output is a sqlite3 database storing multiple table: 
-- genome
-- summary
-- features
-- ccyA
-- hits
-- Gly1
-- Gly2
-- Gly3
-- GlyX3
+- genome          # NCBI metadatas
+- gtdbtk          # GTDB-TK classification results
+- checkm          # Checkm Results 
+- summary         # PCALF summary table
+- features        # PCALF features table
+- hits            # PCALF hits table
+- ccyA            # ccyA table
+- gly1            # Gly1 MSA
+- gly2            # Gly2 MSA
+- gly3            # Gly3 MSA
+- glyx3           # Glyx3 MSA
+- nterdb          # N-ter table
+
+You can use the sqlite3 database from another run as a basis for a new one. In this case, MSAs stored in the sqlite3 file will be used to generate HMM profiles for [pcalf](#pcalf-).
 
 ### pcalf-report : 
 

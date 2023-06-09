@@ -97,6 +97,7 @@ CREATE TABLE "ccya" ("sequence_id" TEXT,
   "ccyA_frame" TEXT,
   "ccyA_partial" TEXT,
   "ccyA_pseudo" TEXT,
+  "ccyA_src" TEXT,
   "ccyA_seq" TEXT,
   FOREIGN KEY (sequence_id)
        REFERENCES summary (sequence_accession) 

@@ -30,7 +30,7 @@ def parse_ncbi_header(header):
         start= None
         stop= None
         partial = None
-        pseudo = None
+        pseudo = False
         for d in desc:
             if "location=" in d:                
                 start,stop,strand = parse_location(d)                
@@ -38,13 +38,13 @@ def parse_ncbi_header(header):
                 partial = d.replace("[","").replace("]","").split("=")[-1]
             elif "pseudo" in d:
                 pseudo = d.replace("[","").replace("]","").split("=")[-1]
-        return region,start,stop,strand,partial,pseudo
-    return None,None,None,None,None,None
+        return region,start,stop,strand,partial,pseudo,"NCBI annotation"
+    return None,None,None,None,None,None,None
 
 def parse_prodigal_header(header):
     ">MTBS01000157.1_30 # 28299 # 29294 # -1 # ID=157_30;partial=01;start_type=Edge;rbs_motif=None;rbs_spacer=None;gc_cont=0.501"
     seqid, start, stop , strand , desc = header.split(" # ")
-    pseudo = None
+    pseudo = "NA"
     partial = None
     for d in desc.split(";"):
         k,v = d.split("=")
@@ -57,7 +57,7 @@ def parse_prodigal_header(header):
                 partial = "5',3'"
             else:
                 pass
-    return "_".join(seqid.replace('>','').split("_")[:-1]) , start, stop, strand, partial, pseudo
+    return "_".join(seqid.replace('>','').split("_")[:-1]) , start, stop, strand, partial, pseudo, "Prodigal prediction"
 
 
 rule ccya:
@@ -74,7 +74,7 @@ rule ccya:
                 files[fid] = fpath
 
         with open(str(output),'w') as streamout:
-            streamout.write("sequence_id\tccyA_genomic_region\tccyA_start\tccyA_stop\tccyA_frame\tccyA_partial\tccyA_pseudo\tccyA_seq\n")
+            streamout.write("sequence_id\tccyA_genomic_region\tccyA_start\tccyA_stop\tccyA_frame\tccyA_partial\tccyA_pseudo\tccyA_src\tccyA_seq\n")
             df = pd.read_csv(str(input[0]),sep="\t",header=0,index_col=0)
             for seqid, row in df.iterrows():
                 gid = row.sequence_src
@@ -85,7 +85,7 @@ rule ccya:
                 ccya = fna_records[seqid]
                 region,start,stop,strand,partial,pseudo = parse_ncbi_header(ccya.description)
                 if start is None:
-                    region,start,stop,strand,partial,pseudo = parse_prodigal_header(ccya.description)
+                    region,start,stop,strand,partial,pseudo,src = parse_prodigal_header(ccya.description)
                 #"ccyA\tccyA_genomic_region\tccyA_start\tccyA_stop\tccyA_frame\tccyA_partial\tccyA_pseudo\tccyA_seq\n"
                 streamout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(
                     ccya.id,
@@ -95,6 +95,7 @@ rule ccya:
                     strand,
                     partial,
                     pseudo,
+                    src,
                     str(ccya.seq)                        
                     )
                 )

@@ -44,54 +44,23 @@ $( document ).ready(function() {
     })
 
     generate_card()
-    // $("#overlay").animate({
-    //     // width: 0
-    //     height:0
-    // });
     $("#overlay").hide()
 
-    // $("#content-pannel").css("width","auto")
-    $("#content-pannel").css("flex-grow","5")
- 
-    NAV_WIDTH = $(".nav-content").css("width")
-    $(".nav-content").click(function(e){
-        if(e.target === e.currentTarget){            
-            if ($(this).css("width")=="1px"){
-                $(this).animate({
-                    width: NAV_WIDTH
-                });
-                $(this).children().show()
-            } else {
-                $(this).children().hide()
-                $(this).animate({
-                    width: 1
-                });
-                
-            }
-        }       
-    })
 
 
     // FILTER CARD LIST WHEN ENTER KEY IS PRESSED
-    
     $(".input_list").keypress(function(event) {
-        if(event.which == 13){
-            var val = [];
-            $(".input_list").each(function(){                
-                if ($(this).val()){
-                    val.push($(this).val())
-                }            
-            })
-            
-            // var value = this.value.toLowerCase().trim();
+        if(event.which == 13){ // enter key
+            var val = $(this).val().split(" ");
             var target = $(this).attr("ul")            
             $("#"+target + " li").show().filter(function() { 
                 var li = $(this);
                 var r = false;
-                $.each(val,function(i,e){                                           
+                $.each(val,function(i,e){    
+                                                 
                     if (li.children("a").attr("info").toLowerCase().trim().indexOf(e.toLowerCase()) == -1){                
                         r = true;
-                    };                    
+                     }             
                 });                                
                 return r;
             }).hide();
@@ -135,28 +104,53 @@ $( document ).ready(function() {
         var seqid = $(this).attr("protein");
         var strain = $(this).attr("strain");
         var gid = $(this).attr("gid");
-        render_genome(strain,gid);
+        render_entry(seqid,strain,gid);        
+    })
 
-        if (seqid){
-            render_protein(strain,gid,seqid);
-            render_gene(strain,gid,seqid);
-            render_feature(strain,gid,seqid);
-            render_hit(strain,gid,seqid);
-        }
 
-        $('html,body').animate({
-            scrollTop: $("#Cards").offset().top},
-            'slow');
+    $(".sms_button").click(function(){
+        target = $(this).attr("target")            
+        
+        $(".sms_button").removeClass("button_active")
+        $(".sms_plot").hide()
+        
+        $(this).addClass("button_active")
+        $("#"+target).fadeIn(10)
     })
 
 
     $(".oms_button").click(function(){
-        $(".oms_button").removeClass("oms_button_active")
+        target = $(this).attr("target")
+        var id = $("#"+target).children().children().attr('id')//$(this).attr('id')
+        
+        var myPlot = document.getElementById(id);
+        
+        if (myPlot){
+            myPlot.removeAllListeners('plotly_click')
+            console.log("removing listeners")
+        }
+        
+        $(".oms_button").removeClass("button_active")
         $(".oms_plot").hide()
         
-        target = $(this).attr("target")
-        $(this).addClass("oms_button_active")
-        $("#"+target).fadeIn(100) 
+        $(this).addClass("button_active")
+        $("#"+target).fadeIn(10)
+  
+        if (myPlot && target!="sunburst" && target!="treemap"){
+            
+            myPlot.on('plotly_click', function(data){
+        
+                var entry_data = data.points.map(function(d){
+                    return (d.data.customdata);
+                });
+                
+                var seqid = entry_data[0][0].seqid;
+                var strain = entry_data[0][1].Organism_Name;
+                var gid = entry_data[0][2].Assembly;
+                render_entry(seqid,strain,gid);           
+            })
+        }
+       
     })
 
     $(".toggle-section").click(function(){
@@ -171,11 +165,11 @@ $( document ).ready(function() {
     })
 
 
-
     $("#Cards-container").on("click",".close-parent",function(){
         // $("#Cards").parent().slideUp(1000)       
         $("#Cards-container").slideUp(1000)       
     });
+
 
     $("#Cards").on("click",".fasta",function(){
         var seqid = $(this).attr("seq")
@@ -183,22 +177,38 @@ $( document ).ready(function() {
         var strain = $(this).attr("strain")
         var seqtype = $(this).attr("seqtype")
         var seq= DATAS[strain][gid]["sequences"][seqid]["sequence"]
-        if (seqtype=="fna"){
+        if (seqtype=="fna") {
             seq= DATAS[strain][gid]["sequences"][seqid]["ccyA_seq"]
         }
         var fasta = format_fasta(seqid, seq , DATAS[strain][gid]["sequences"][seqid])
         navigator.clipboard.writeText(fasta);
     
-        // $("#copy-info").css("display","flex")
         var e = $(this);
-        e.text("Copied !");
-        // $("#copy-info").html("<p style='font-style: italic;'>Copied!</p>")
+        e.addClass("copied")
         setTimeout(function() {
-            // $("#copy-info").fadeOut() 
-            e.text("Copy sequence");            
+            e.removeClass("copied")
         }, 2000);         
-        
     })
+
+    $("#Cards").on("click",".feature",function(){
+        var seqid = $(this).attr("seq")
+        var gid = $(this).attr("gid")
+        var strain = $(this).attr("strain")
+        var fid = $(this).attr("feature")
+        console.log(fid)
+        var feature= DATAS[strain][gid]["sequences"][seqid]["features"][fid]
+        var identifier = seqid + "_" + feature.feature_id
+        var seq = feature.feature_seq
+        var fasta = format_fasta(identifier, seq , DATAS[strain][gid]["sequences"][seqid])
+        navigator.clipboard.writeText(fasta);
+    
+        var e = $(this);
+        e.addClass("copied")
+        setTimeout(function() {
+            e.removeClass("copied")
+        }, 2000);         
+    })
+
 
 
     $(".clear_cart").click(function(){
@@ -206,6 +216,23 @@ $( document ).ready(function() {
         $(".remove_from_cart").removeClass("remove_from_cart")
     });
 });
+
+//
+
+function render_entry(seqid,strain,gid){
+    console.log(seqid,strain,gid)
+    render_genome(strain,gid);
+    if (seqid){
+        render_protein(strain,gid,seqid);
+        render_gene(strain,gid,seqid);
+        render_feature(strain,gid,seqid);
+        render_hit(strain,gid,seqid);
+    }
+
+    $('html,body').animate({
+        scrollTop: $("#Cards").offset().top},
+        'slow');
+}
 
 // FUNCTION AND EVENT
 function generate_card(){
@@ -331,7 +358,7 @@ function render_genome(strain,gid){
             <div class='button small_button inline-block'><a href='${url}' target='_blank' >NCBI</a></div>                    
             <div><span class="icon close-parent"></span></div>
         </div>
-        <div class=key-val>
+        <div class='key-val wrap'>
     ` // DIV NOT CLOSE ! 
     
     $.each(d,function(index,value){        
@@ -359,25 +386,41 @@ function render_gene(strain,gid,seqid){
         <div class='gene_card'>
             <div class=card_summary>
                 <h1> Gene(s) </h1>
-                <p><b>${seqid}</b></p>
-                <div class='button inline-block fasta' seqtype=fna seq='${seqid}' strain='${strain}' gid='${gid}' >Copy sequence</div>                                                
+                <p><b>${seqid}</b></p>                                           
                 <div></div>
             </div>
-            <div class=key-val>
+            <div class='key-val box-shadow'>
         ` // DIV NOT CLOSE !         
-        content += render_shadow_key_val("Genomic region",seqrecord.ccyA_genomic_region)
-        content += render_shadow_key_val("Start position",seqrecord.ccyA_start)
-        content += render_shadow_key_val("End position",seqrecord.ccyA_stop)
-        content += render_shadow_key_val("Frame",seqrecord.ccyA_frame)
-        content += render_shadow_key_val("Partial",seqrecord.ccyA_partial)
-        content += render_shadow_key_val("Pseudo",seqrecord.ccyA_pseudo)
-            
+        content += render_key_val("Genomic region",seqrecord.ccyA_genomic_region)
+        content += render_key_val("Start position",seqrecord.ccyA_start)
+        content += render_key_val("End position",seqrecord.ccyA_stop)
+        content += render_key_val("Frame",seqrecord.ccyA_frame)
+        content += render_key_val("Partial",seqrecord.ccyA_partial)
+        content += render_key_val("Pseudo",seqrecord.ccyA_pseudo)
+        content += `
+            <div class='copy fasta tooltip' seqtype=fna seq='${seqid}' strain='${strain}' gid='${gid}' >
+                <span class="tooltiptext tooltiptext-left">
+                    Copy ccyA gene in fasta format.
+                </span>
+            </div>`
+
         content = content + "</div></div>" // DIV CLOSE !
         $("#Gene-card").html(
             content
         )
     }
 }
+
+
+// 
+
+
+    
+
+
+
+
+
 
 function render_protein(strain,gid,seqid){
     seqrecord = DATAS[strain][gid]["sequences"][seqid];
@@ -389,20 +432,27 @@ function render_protein(strain,gid,seqid){
             current_class = "remove_from_cart"
         }
         content = `
-        <div class='gene_card'>
+        <div class='protein_card'>
             <div class=card_summary>
                 <h1> Protein(s) </h1>
                 <p><b>${seqid}</b></p>
-                <div class='button inline-block fasta' seqtype=faa seq='${seqid}' strain='${strain}' gid='${gid}' >Copy sequence</div>
+
                 <span class='add_to_cart icon ${current_class}' id='${seqid}'></span>
             </div>
-            <div class=key-val>
+            <div class='key-val box-shadow'>
         ` // DIV NOT CLOSE !         
-        content += render_shadow_key_val("Calcyanin flag",seqrecord.flag)
-        content += render_shadow_key_val("C-ter composition",seqrecord.cter)
-        content += render_shadow_key_val("N-ter type",seqrecord.nter)
-        content += render_shadow_key_val("Sequence length",seqrecord.sequence.length)
-        content += render_shadow_key_val("Nearest neighbor",seqrecord.nter_neighbor)        
+        content += render_key_val("Calcyanin flag",seqrecord.flag)
+        content += render_key_val("C-ter composition",seqrecord.cter)
+        content += render_key_val("N-ter type",seqrecord.nter)
+        content += render_key_val("Sequence length",seqrecord.sequence.length)
+        content += render_key_val("Nearest neighbor",seqrecord.nter_neighbor)   
+        content += `
+        <div class='fasta copy tooltip' seqtype=faa seq='${seqid}' strain='${strain}' gid='${gid}' >
+            <span class="tooltiptext tooltiptext-left">
+                Copy calcyanin protein in fasta format.
+            </span>
+        </div>
+        `     
         content = content + "</div></div>" // DIV CLOSE !
         $("#Protein-card").html(
             content
@@ -432,7 +482,14 @@ function render_feature(strain,gid,seqid){
                 color_class = "even-color";
             }
             content += "<div class='key-val box-shadow "+color_class+"'>";
-            content += _render_feature(index,feature);            
+            content += _render_feature(index,feature);    
+            content += `
+                <div class='feature copy tooltip' feature='${index}'  seq='${seqid}' strain='${strain}' gid='${gid}'>
+                    <span class="tooltiptext tooltiptext-left">
+                        <p style='text-align:left;'>Copy ${feature.feature_id} for ${seqid} in fasta format.</p>
+                    </span>
+                </div>
+                `
             content += "</div>";
         })
 
@@ -443,11 +500,8 @@ function render_feature(strain,gid,seqid){
     }
 }
 
-
 function render_hit(strain,gid,seqid){
     seqrecord = DATAS[strain][gid]["sequences"][seqid];
-  
-    // $("#Protein-card").hide()
     if (seqid){
         content = `
         <div class='hit_card'>
@@ -456,7 +510,6 @@ function render_hit(strain,gid,seqid){
                 <p><b>${seqid}</b></p>                    
             </div>            
         ` // DIV NOT CLOSE !      
-
         $.each(seqrecord["hits"],function(index,hit){      
             if (index % 2 == 0){
                 color_class = "odd-color";
@@ -477,7 +530,6 @@ function render_hit(strain,gid,seqid){
 
 function render_shadow_key_val(k,v){
     return "<div class='key-val-item box-shadow'><p class=key>"+k+"</p><p class=value>"+v+"</p></div>"
-    // return "<div class=key-val><div class=key><p>"+k+"</p></div><div class=value><p>"+v+"</p></div></div>"
 }
 
 function render_key_val(k,v){
@@ -492,7 +544,6 @@ function _render_feature(index,feature){
     feature_html += render_key_val("Feature end" , feature.feature_end)
     feature_html += render_key_val("Feature E-value" , feature["e-value"].toExponential())
     feature_html += render_key_val("Feature coverage" , feature.coverage)
-    feature_html += render_key_val("Feature seq" , feature.feature_seq)
     return feature_html
 }
 
@@ -504,7 +555,6 @@ function _render_hit(index,hit){
     hit_html += render_key_val("Hit E-value" ,hit.hit_e_value.toExponential())
     hit_html += render_key_val("Hit Coverage" , hit.hit_coverage)
     hit_html += render_key_val("Hit identity" , hit.hit_pident)
-    hit_html += render_key_val("Hit tool" , hit.hit_method)
     return hit_html
 }
 

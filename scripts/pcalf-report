@@ -11,15 +11,13 @@ from pcalf.report import render
 def get_args():
     parser = argparse.ArgumentParser(
         description="""
-
-    pcalf-dataset
-    Retrieve genome and annotation from GenBank and RefSeq using NCBI accession or NCBI taxid
-
+    pcalf-report
+    produce an html report from the sqlite3 db file produced by pcalf-annotate-workflow
     """,
         formatter_class= argparse.RawTextHelpFormatter
     )
-    parser.add_argument("--db",help="Sqlite3 file produced by pcalf-annotate-workflow")
-    parser.add_argument("--out",help="Output file")
+    parser.add_argument("--db", required=True, help="Sqlite3 file produced by pcalf-annotate-workflow")
+    parser.add_argument("--out", required=True, help="Output file")
 
 def main(): 
     args = get_args()

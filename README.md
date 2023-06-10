@@ -23,21 +23,21 @@ its N-terminus type and its C-terminus modular organization.
 <img src="./decision_tree.jpeg" alt="decision_tree" width="100%"/>
 
 ## Dependencies :
-```       
-         pyhmmer==0.7.1
-         biopython==1.81
-         numpy>=1.21
-         pyyaml>=6
-         snakemake==7.22
-         pandas==1.5.3
-         tqdm==4.64.1
-         plotly==5.11.0
-         python-igraph==0.10.4
+```python
+pyhmmer==0.7.1
+biopython==1.81
+numpy>=1.21
+pyyaml>=6
+snakemake==7.22
+pandas==1.5.3
+tqdm==4.64.1
+plotly==5.11.0
+python-igraph==0.10.4
 ```
 
 ## External dependency :
 ```
-  blast
+blast
 ```
 
 ## INSTALLATION
@@ -49,16 +49,28 @@ pip3 install https://github.com/K2SOHIGH/pcalf.git
 
 ## Usage :
 
-Pcalf is composed of several command :
-- pcalf
-- pcalf-datasets-workflow
-- pcalf-annotate-workflow
-- pcalf-report
+Pcalf is composed of several commands :
+- [pcalf](#pcalf-)
+- [pcalf-datasets-workflow](#pcalf-datasets-workflow-)
+- [pcalf-annotate-workflow](#pcalf-annotate-workflow-)
+- [pcalf-report](#pcalf-report-)
+
+---
 
 ### pcalf : 
 
-This command can be used to look quickly for the presence of calcyanin in a set of amino acid sequences. It take one or more fasta files as input and output several files including a summary, a list of features and a list of raw hits produced during the search.  In addition, it also output updated HMMs, updateds MSAs with calcyanin tagged as Calcyanin with known N-ter detected if any.
+This command can be used to look quickly for the presence of calcyanin in a set of amino acid sequences. It take one or more fasta files as input and output several files including a summary, a list of features and a list of raw hits produced during the search.  In addition, it also output updated HMMs, updateds MSAs with calcyanin tagged as Calcyanin with known N-ter detected if any. 
 
+
+`
+pcalf -i proteins.fasta -o pcalf_results --iterative-update --gly1-msa custom_gly1_msa.fasta
+`
+
+--iterative-update : True calcyanins (if any) will be add to the HMMs profiles iteratively starting with the best sequence (based on feature' score).
+
+--gly1-msa : Use another MSA instead of the default one. A HMM profile will be built from the given MSA and Glycine weight will be increased.
+
+---
 
 ### pcalf-datasets-workflow : 
 
@@ -68,12 +80,22 @@ Genomes and annotations (CDS and genes ) will be downloaded using the new comman
 A yaml file is also produced and can be used as input for [pcalf-annotate-workflow](#pcalf-annotate-workflow-).
 ```
 GC*_******.*:
-  genome : /path/to/genome
-  cds_faa: /path/to/cds_faa
-  cds_fna: /path/to/cds_fna
+  genome : /path/to/genome.gz
+  cds_faa: /path/to/cds_faa.gz
+  cds_fna: /path/to/cds_fna.gz
 GC#_######.#:
 ...
 ```
+
+example :
+
+`
+pcalf-datasets-workflow -t 1117 -o pcalf_datasets_results -a file_with_accession.txt -e file_with_accession_to_ignore.txt
+`
+
+The command above will download all cyanobacteria genome (taxid : 1117) and genomes specified in file_with_accession.txt. If any of them are specified in file_with_accession_to_ignore.txt, then they will be ignored.
+
+---
 
 ### pcalf-annotate-workflow : 
 
@@ -89,7 +111,16 @@ Note, that GTDB-TK and checkM requires external databases, respectively [GTDB](h
 
 pcalf-annotate-workflow take as input a yaml file with a specific format, see [pcalf-datasets-workflow](#pcalf-datasets-workflow-) for details.
 
-The workflow produced several files for each step but the final output is a sqlite3 database storing multiple table: 
+example : 
+
+`
+pcalf-annotate-workflow -i input_file.yaml -o pcalf_annotate_results --db db_file_from_another_run.sqlite3 --snakargs "--profile my_slurm_profile --use-conda --jobs 50" --gtdb my_gtdb_directory --checkm my_checkm_datas_directory
+`
+
+The command above will process all the genome specified in input_file.yaml through the pcalf-annotate-workflow including checkm and gtdb-tk. The sqlite3 file produced will be merged with db_file_from_another_run.sqlite3. The workflow will be ran on your computer cluster with 50 jobs at a time. See [snakemake documentation](https://snakemake.readthedocs.io/en/stable/) for details about cluster execution.
+
+Several output files for each step will be produced but the final output is a sqlite3 database storing multiple tables: 
+```
 - genome          # NCBI metadatas
 - gtdbtk          # GTDB-TK classification results
 - checkm          # Checkm Results 
@@ -102,17 +133,26 @@ The workflow produced several files for each step but the final output is a sqli
 - gly3            # Gly3 MSA
 - glyx3           # Glyx3 MSA
 - nterdb          # N-ter table
-
+```
 You can use the sqlite3 database from another run as a basis for a new one. In this case, MSAs stored in the sqlite3 file will be used to generate HMM profiles for [pcalf](#pcalf-).
+
+---
 
 ### pcalf-report : 
 
 This command produce an HTML report from a sqlite3 database produced by [pcalf annotate workflow](#pcalf-annotate-workflow-).
 
+example :
+
+`
+pcalf-report --db sqlite3_file.sqlite3 --out report.html
+`
+
+---
 
 ### Workflow : 
 
-![Workflow description](./pcalf.svg)
+![Workflow description](./src/pcalf/report/pcalf.svg)
 
 
 

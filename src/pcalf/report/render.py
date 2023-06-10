@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-
 import json
 import os
 import re
@@ -57,18 +56,16 @@ def count_genotypes(df , group):
 def make_genome_pie_chart(cnx):
     summary_df = pd.read_sql_query("""
         SELECT * FROM genomes as g JOIN 
-        harley as h on h.Accession=g.Accession JOIN 
+        harley as h on h.Accession=g.Accession LEFT JOIN 
         summary as s on G.Accession = s.sequence_src""", 
                                    cnx , index_col="Accession").reset_index()
+    #return summary_df
     summary_df.Accession = summary_df.apply(lambda x : x.Accession[0],axis=1)
     summary_df["uid"] = summary_df.apply(lambda x : x.Accession.split("_")[-1].split(".")[0], axis=1 )
     summary_df["uidv"] = summary_df.apply(lambda x : x.Accession.split("_")[-1], axis=1 )
     summary_df["(DBccyA)"] = summary_df.apply(lambda x : define_ccya_genotype(x), axis=1 )
     summary_df["(ccyA)"] = summary_df.apply(lambda x : "ccyA+" if x.flag in ["Calcyanin with known N-ter","Calcyanin with new N-ter"] else "ccyA-", axis=1 )
     summary_df = summary_df[["Organism", "uid", "uidv", "Accession", "Assembly name" , "Date" , "(ccyA)" , "sequence_accession", "flag", "nter"]]
-
-
-
 
     # We reformat the dictionnary and make a plotly-friendly dataframe.
     metrics_d = []
@@ -87,14 +84,14 @@ def make_genome_pie_chart(cnx):
     metrics_df = pd.DataFrame(metrics_d)
     metrics_df.columns = ["RedLevel","genotype","count"]
     fig = px.pie(metrics_df,values="count",names="genotype",facet_col="RedLevel",color="genotype",
-            color_discrete_map={"ccyA-":"#A61C3C","ccyA+":"#439775","ccyA~":"orange"})
+            color_discrete_map=
+#                 {"ccyA-":"#ffb4b4","ccyA+":"#439775","ccyA~":"orange"}
+                 {"ccyA-":"#D5D5D8","ccyA+":"#88D9E6","ccyA~":"orange"}
+                 
+                )
     return fig
 
 #make_genome_pie_chart(cnx)
-
-
-# In[4]:
-
 
 def make_decision_tree_chart():
     # DECISION TREE CHART
@@ -183,12 +180,7 @@ def make_decision_tree_chart():
         return decision_tree
 #make_decision_tree_chart()    
 
-
 # # Number of cyanobacteria over time
-
-# In[5]:
-
-
 def count_genome_by_date(df , group , label):
     df.sort_values("Date",inplace=True)
     if group in df.columns:
@@ -206,7 +198,7 @@ def count_genome_by_date(df , group , label):
 def make_genome_over_time_chart(cnx):
     summary_df = pd.read_sql_query("""
         SELECT * FROM genomes as g JOIN 
-        harley as h on h.Accession=g.Accession JOIN 
+        harley as h on h.Accession=g.Accession LEFT JOIN 
         summary as s on G.Accession = s.sequence_src""", 
                                    cnx , index_col="Accession").reset_index()
     summary_df.Accession = summary_df.apply(lambda x : x.Accession[0],axis=1)
@@ -224,13 +216,12 @@ def make_genome_over_time_chart(cnx):
          count_genome_by_date(summary_df,"Accession","Entry<br>[i.e <ncbi db>_<assembly>.<version>]"),
         ])
 
-
     genome_over_time = px.line(assembly_count_df.reset_index().sort_values(["Date","label"]),
                                hover_data=["count_by_date"],
                                x="Date", y="total",color="label" ,markers=True)   
     genome_over_time.update_layout(
         title="Number of entry over time",
-        yaxis_title="No entry",
+        yaxis_title="#entries",
         xaxis_title="Date",
         legend_title="Level of redundancy",
         paper_bgcolor='rgba(0,0,0,0)',
@@ -240,14 +231,7 @@ def make_genome_over_time_chart(cnx):
     )
     return genome_over_time
 
-#make_genome_over_time_chart(cnx)
-
-
 # # Number of sequences over time
-
-# In[6]:
-
-
 def count_seq_by_date(df , group , subset = [] , label = None):
     df.sort_values("Date",inplace=True)
     if group in df.columns:
@@ -260,8 +244,6 @@ def count_seq_by_date(df , group , subset = [] , label = None):
 
         df = pd.DataFrame(df.groupby(grouping_variables).count()[group])
         df.columns=["count_by_date"]
-        #df["total"] = df["count_by_date"].cumsum(axis = 0)
-        #df["label"] = label if label else group
         return df
     else:
         raise KeyError(group)
@@ -291,7 +273,7 @@ def make_sequence_over_time_chart(cnx):
                                hover_data=["count_by_date"],color="nter",line_dash="flag" ,markers=True)   
     fig.update_layout(
         title="Number of calcyanin by N-ter type and flag over time",
-        yaxis_title="No sequences",
+        yaxis_title="#sequences",
         xaxis_title="Date",
         legend_title="Calcyanin N-ter type and flag",
         paper_bgcolor='rgba(0,0,0,0)',
@@ -301,14 +283,9 @@ def make_sequence_over_time_chart(cnx):
     )
     return fig
 
-#make_sequence_over_time_chart(cnx)
 
 
 # # Modular organization
-
-# In[7]:
-
-
 DOM_CMAP = {
         "Gly1":"#ecec13",   
         "Gly2":"#ec9d13",
@@ -318,7 +295,6 @@ DOM_CMAP = {
 DOM_CMAP.update(NTER_CMAP)
 
 
-# In[8]:
 
 
 def sequence_modular_orga(rid,record,y,**kwargs):
@@ -372,22 +348,30 @@ def sequence_modular_orga(rid,record,y,**kwargs):
                         neighbor = "NA"
                         if "nter_neighbor" in record:
                             neighbor = record["nter_neighbor"]
-                        htxt = "- {}<br>- {}<br>- {} [neighbor]<br>- {}<br>- {}<br>".format(rid,dom , neighbor , record["flag"] ,"From {} to {}".format(min(sx),max(sx)))
+                        htxt = "- {}<br>- {}<br>- {}<br>- {}<br>- {} [nearest neighbor]<br>".format(
+                            rid,
+                            dom, 
+                            record["flag"],
+                            "From {} to {}".format(min(sx),max(sx)),
+                            neighbor
+                        )
+                        customdatas = [{"seqid":rid}]
                         for i,j in kwargs.items():
                             htxt+="- {}: {}<br>".format(i,j)
+                            customdatas.append({i:j})
 
                         traces.append(go.Scatter(
-                            x=sx, y=sy,
-                            mode='lines',
-                            name=dom,
-                            line=line,#showlegend=False,                                             
-                            legendgroup=dom,
-                            legendgrouptitle_text=dom,
-                            hovertext=htxt,
-                            #opacity = 0.4,
-                            #fill="none",
-                            #fillcolor=None,
-                            #name="second legend group",                                                            
+                                x=sx, y=sy,
+                                mode='lines',
+                                name=dom,
+                                line=line,#showlegend=False,                                             
+                                legendgroup=dom,
+                                legendgrouptitle_text=dom,
+                                text="",
+                                hoverlabel=None,
+                                hovertext=htxt,
+                                hoveron='points+fills',
+                                customdata = customdatas,                                                            
                             )
                         )    
         return traces
@@ -406,7 +390,9 @@ def make_modorg_chart(cnx):
     # dictionnary with sequence identifiers as keys and sequence-related information + features as values
     sequence_datas = {}
 
-    sequence_df = pd.read_sql_query("SELECT * FROM summary as s JOIN genomes as g on g.Accession = s.sequence_src", cnx ).set_index("sequence_accession")
+    sequence_df = pd.read_sql_query("""
+        SELECT * FROM summary as s JOIN genomes as g on g.Accession = s.sequence_src
+        """, cnx ).set_index("sequence_accession")
     for _ , row in sequence_df.iterrows():
         sequence_datas[_] = row.to_dict()
         sequence_datas[_]["features"]=features_dict[_]  
@@ -464,10 +450,6 @@ def make_modorg_chart(cnx):
             oms_plots[nter_type] = oms
     return oms_plots
 
-#make_modorg_chart(cnx)["Z-type"].show()
-
-
-# In[9]:
 
 
 def make_sunburst(cnx):
@@ -479,11 +461,11 @@ def make_sunburst(cnx):
         """,cnx).set_index("sequence_accession")
     sequence_df.nter.fillna("Unknown-type",inplace=True)
     sequence_df = sequence_df.groupby(
-        ["Date","flag","nter","cter","iteration"]).count().reset_index() 
-    sequence_df = sequence_df[["Date","flag","nter","cter","iteration","sequence_src"]]
-    sequence_df.columns = ["Date","flag","nter","cter","iteration","No of sequences"]
+        ["Date","flag","nter","cter"]).count().reset_index() 
+    sequence_df = sequence_df[["Date","flag","nter","cter","sequence_src"]]
+    sequence_df.columns = ["Date","flag","nter","cter","No of sequences"]
     # We make a sunburst chart : 
-    sunburst = px.sunburst(sequence_df, path=['nter', 'flag', 'cter', "Date", 'iteration'], 
+    sunburst = px.sunburst(sequence_df, path=['nter', 'flag', 'cter', "Date"], 
                            values='No of sequences', 
                            color = "nter",
                            color_discrete_map=NTER_CMAP)
@@ -498,22 +480,18 @@ def make_calcyanin_treemap(cnx):
 
         """,cnx).set_index("sequence_accession")
     sequence_df.nter.fillna("Unknown-type",inplace=True)
-    sequence_df = sequence_df[["Date","flag","nter","cter","iteration","sequence_src"]]
-    sequence_df.columns = ["Date","flag","nter","cter","iteration","No of sequences"]
+    sequence_df = sequence_df[["flag","nter","cter","sequence_src"]]
+    sequence_df.columns = ["flag","nter","cter","No of sequences"]
     sequence_df = sequence_df.groupby(
-        ["Date","flag","nter","cter","iteration"]).count().reset_index() 
+        ["flag","nter","cter"]).count().reset_index() 
     # We make a sunburst chart : 
     # And another one with the same kind of information : a treemap:
-    treemap = px.treemap(sequence_df, path=[px.Constant(""), 'nter', 'flag', 'cter', 'Date'], values='No of sequences',
+    treemap = px.treemap(sequence_df, path=['nter', 'flag', 'cter'], values='No of sequences',
                     color='nter',color_discrete_map = NTER_CMAP)
-    treemap.update_traces(root_color="lightgrey")
-    treemap.update_layout(title="No of Calcyanin.", margin = dict(t=50, l=25, r=25, b=25))
+    treemap.update_layout(title="No of Calcyanin.")
     return treemap
 
 #make_calcyanin_treemap(cnx)
-
-
-# In[10]:
 
 
 def make_data(cnx):
@@ -526,6 +504,7 @@ def make_data(cnx):
         checkm as c on g.Accession=c.`Bin Id` LEFT JOIN
         gtdbtk as t on g.Accession=t.`user_genome`
         """,cnx)
+
     genomes_df = genomes_df.fillna("NA")
     genomes_df = genomes_df.loc[:,~genomes_df.columns.duplicated()]
     genomes_df = genomes_df[['Accession', 'Assembly name','Date', 'Submitter',
@@ -536,8 +515,10 @@ def make_data(cnx):
        'Genome size (bp)', '# scaffolds', '# contigs',
        'N50 (scaffolds)', 'N50 (contigs)','# predicted genes',
        'classification', 'fastani_reference','fastani_ani']]
-    #keys are the name of the organism, value are dictionnaries (gid : datas)
-    for org , sdf in genomes_df.groupby("Organism"):
+    
+    ccyA_plus = []
+    ccyA_minus = []
+    for org , sdf in genomes_df.groupby(["Organism"]):
         sdf.index = sdf.Accession
         DATAS[org]=sdf.T.to_dict()
         for acc in sdf.index:
@@ -547,24 +528,36 @@ def make_data(cnx):
                 s.sequence_src="{}"
                 """.format(acc),cnx,index_col="sequence_id")
             seqs = seqs.fillna("NA")
-            seqs = seqs.T.to_dict()
+            seqs = seqs.T.to_dict()            
             DATAS[org][acc]["sequences"] = seqs
+            
+            if seqs:
+                ccyA_plus.append(org)
+            else:
+                ccyA_minus.append(org)
+            
             for seq in seqs.keys():
                 features = pd.read_sql_query("""
                     SELECT * FROM features as f WHERE
                         f.sequence_id="{}"
-                """.format(seq),cnx,index_col="feature_id")
+                """.format(seq),cnx)                
                 features = features.fillna("NA")
+                features.sort_values(["feature_id","e-value"],inplace=True)
                 DATAS[org][acc]["sequences"][seq]["features"] = features.T.to_dict()
-
+                hits = pd.read_sql_query("""
+                    SELECT * FROM hits as f WHERE
+                        f.sequence_id="{}"
+                """.format(seq),cnx)
+                hits = hits.fillna("NA")
+                hits.sort_values(["hit_src","hit_e_value"],inplace=True)
+                DATAS[org][acc]["sequences"][seq]["hits"] = hits.T.to_dict()
+    
+    DATAS = {i:DATAS[i] for i in list(set(ccyA_plus + ccyA_minus))}
+                
+                
     # we convert the dictionnary into a json object for jinja2 injection.
     json_object = json.dumps(DATAS, indent = 4)     
-    return json_object
-
-#make_data(cnx)
-
-
-# In[12]:
+    return json_object , DATAS
 
 
 # And we fill the template 
@@ -573,9 +566,14 @@ def save(file,report):
         os.makedirs(dirname,exist_ok=True)
         with open( file , 'w' ) as stream:
             stream.write(report)
+
+            
             
 def render(db,templatedir,outfile):
-    #dbname = os.path.basename(db).split(".")[0]
+    with open(os.path.join(templatedir,"pcalf.svg"),"r") as f:
+        workflow = f.read().rstrip()
+
+    # dbname = os.path.basename(db).split(".")[0]
     cnx = sqlite3.connect(db)
     with open(os.path.join(templatedir,'template.html')) as file_:
         template = Template(file_.read())
@@ -584,11 +582,13 @@ def render(db,templatedir,outfile):
 
     report = template.render(
         
-        datas  = make_data(cnx),
+        datas  = make_data(cnx)[0],
 
         css= open( os.path.join(templatedir,"template.css" )).read(),
 
         js = open( os.path.join(templatedir,"template.js"  )).read(),
+        
+        workflow = workflow,
 
         decision_tree = make_decision_tree_chart().to_html().split("<body>")[1].split("</body>")[0],
 
@@ -596,15 +596,20 @@ def render(db,templatedir,outfile):
 
         treemap = make_calcyanin_treemap(cnx).to_html().split("<body>")[1].split("</body>")[0],# if sunburst else "<p style='font-style: italic;'>No calcyanin detected - No treemap :/ </p>"  ,
 
-        cobahma_oms = oms_plots["CoBaHMA-type"].to_html().split("<body>")[1].split("</body>")[0] if "CoBaHMA-type" in oms_plots else "<p style='font-style: italic;'>No data for this kind of N-ter</p>"  ,
+        cobahma_oms = oms_plots["CoBaHMA-type"].to_html(
+            full_html=False,div_id="cobahma-type-plot",include_plotlyjs=False) if "CoBaHMA-type" in oms_plots else "<p style='font-style: italic;'>No data for this kind of N-ter</p>"  ,
 
-        x_oms = oms_plots["X-type"].to_html().split("<body>")[1].split("</body>")[0] if "X-type" in oms_plots else "<p style='font-style: italic;'>No data for this kind of N-ter</p>"  ,
+        x_oms = oms_plots["X-type"].to_html(
+            full_html=False,div_id="x-type-plot",include_plotlyjs=False) if "X-type" in oms_plots else "<p style='font-style: italic;'>No data for this kind of N-ter</p>"  ,
 
-        y_oms = oms_plots["Y-type"].to_html().split("<body>")[1].split("</body>")[0] if "Y-type" in oms_plots else "<p style='font-style: italic;'>No data for this kind of N-ter</p>"  ,
+        y_oms = oms_plots["Y-type"].to_html(
+            full_html=False,div_id="y-type-plot",include_plotlyjs=False) if "Y-type" in oms_plots else "<p style='font-style: italic;'>No data for this kind of N-ter</p>"  ,
 
-        z_oms = oms_plots["Z-type"].to_html().split("<body>")[1].split("</body>")[0] if "Z-type" in oms_plots else "<p style='font-style: italic;'>No data for this kind of N-ter</p>"  ,
+        z_oms = oms_plots["Z-type"].to_html(
+            full_html=False,div_id="z-type-plot",include_plotlyjs=False) if "Z-type" in oms_plots else "<p style='font-style: italic;'>No data for this kind of N-ter</p>"  ,
 
-        unknown_oms = oms_plots["Unknown-type"].to_html().split("<body>")[1].split("</body>")[0]  if "Unknown-type" in oms_plots else "<p style='font-style: italic;'>No data for this kind of N-ter</p>"  ,
+        unknown_oms = oms_plots["Unknown-type"].to_html(
+            full_html=False,div_id="unknown-type-plot",include_plotlyjs=False)  if "Unknown-type" in oms_plots else "<p style='font-style: italic;'>No data for this kind of N-ter</p>"  ,
 
         genome_over_time = make_genome_over_time_chart(cnx).to_html().split("<body>")[1].split("</body>")[0],
 
@@ -614,4 +619,5 @@ def render(db,templatedir,outfile):
     )
         
     save(outfile,report)
+
 

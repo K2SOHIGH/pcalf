@@ -62,9 +62,9 @@ Pcalf is composed of several commands :
 This command can be used to look quickly for the presence of calcyanin in a set of amino acid sequences. It take one or more fasta files as input and output several files including a summary, a list of features and a list of raw hits produced during the search.  In addition, it also output updated HMMs, updateds MSAs with calcyanin tagged as Calcyanin with known N-ter detected if any. 
 
 
-`
+```
 pcalf -i proteins.fasta -o pcalf_results --iterative-update --gly1-msa custom_gly1_msa.fasta
-`
+```
 
 --iterative-update : True calcyanins (if any) will be add to the HMMs profiles iteratively starting with the best sequence (based on feature' score).
 
@@ -89,9 +89,9 @@ GC#_######.#:
 
 example :
 
-`
+```
 pcalf-datasets-workflow -t 1117 -o pcalf_datasets_results -a file_with_accession.txt -e file_with_accession_to_ignore.txt
-`
+```
 
 The command above will download all cyanobacteria genome (taxid : 1117) and genomes specified in file_with_accession.txt. If any of them are specified in file_with_accession_to_ignore.txt, then they will be ignored.
 
@@ -113,9 +113,9 @@ pcalf-annotate-workflow take as input a yaml file with a specific format, see [p
 
 example : 
 
-`
+```
 pcalf-annotate-workflow -i input_file.yaml -o pcalf_annotate_results --db db_file_from_another_run.sqlite3 --snakargs "--profile my_slurm_profile --use-conda --jobs 50" --gtdb my_gtdb_directory --checkm my_checkm_datas_directory
-`
+```
 
 The command above will process all the genome specified in input_file.yaml through the pcalf-annotate-workflow including checkm and gtdb-tk. The sqlite3 file produced will be merged with db_file_from_another_run.sqlite3. The workflow will be ran on your computer cluster with 50 jobs at a time. See [snakemake documentation](https://snakemake.readthedocs.io/en/stable/) for details about cluster execution.
 
@@ -144,9 +144,9 @@ This command produce an HTML report from a sqlite3 database produced by [pcalf a
 
 example :
 
-`
+```
 pcalf-report --db sqlite3_file.sqlite3 --out report.html
-`
+```
 
 ---
 

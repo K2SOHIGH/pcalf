@@ -28,7 +28,7 @@ Benzerara, K., Duprat, E., Bitard-Feildel, T., Caumes, G., Cassier-Chauvat, C., 
 <br><br>
 ## Calcyanin detection :
 
-The ccyA gene is searched at the protein level following a simple [decision tree](#-Decision-tree-) based on the specific composition of the C-ter extremity of this protein.
+The ccyA gene is searched at the protein level following a simple [decision tree](#Decision-tree-) based on the specific composition of the C-ter extremity of this protein.
 We use a weighted HMM profile specific of the glycine zipper triplication (aka GlyX3) to detect sequences with a putative glycine triplication. Sequences with at least one hit against this profile are annotated with three HMM profiles specific of each Glycine zipper : Gly1, Gly2 and Gly3. 
 A set of known calcyanins is used to infere the type of the N-ter extremity (X, Z, Y, CoBaHMA or ?). Finally, a flag is assign to each sequence depending on 
 its N-terminus type and its C-terminus modular organization.

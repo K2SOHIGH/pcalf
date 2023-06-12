@@ -3,8 +3,8 @@
 PCALF stand for Python CALcyanin Finder.
 <br><br>
 
-<img src="./bacIcon.svg" alt="bacIcon" width="150" style="float:left;margin-right:20px"/>
-
+<!-- <img src="./bacIcon.svg" alt="bacIcon" width="150" style="float:left;margin-right:20px"/> -->
+![toolicon](./bacIcon.svg)
  
 
 Benzerara, K., Duprat, E., Bitard-Feildel, T., Caumes, G., Cassier-Chauvat, C., Chauvat, F., ... & Callebaut, I. (2022). [A new gene family diagnostic for intracellular biomineralization of amorphous Ca carbonates by cyanobacteria](https://doi.org/10.1093/gbe/evac026). Genome Biology and Evolution, 14(3), evac026. 
@@ -37,8 +37,8 @@ its N-terminus type and its C-terminus modular organization.
 ## Decision tree :
 
 <!-- ![Workflow description](./decision_tree.jpeg) -->
-<img src="./decision_tree.jpeg" alt="decision_tree" width="100%"/>
-
+<!-- <img src="./decision_tree.jpeg" alt="decision_tree" width="100%"/> -->
+![decision_tree](./decision_tree.jpeg)
 
 
 ## Installation :
@@ -183,7 +183,7 @@ pcalf-report --db sqlite3_file.sqlite3 --out report.html
 ---
 <br><br>
 ## Workflow : 
-![Workflow description](./src/pcalf/report/pcalf.svg)
+![Workflow description](./pcalf/report/pcalf.svg)
 
 
 

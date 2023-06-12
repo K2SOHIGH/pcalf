@@ -1,0 +1,33 @@
+global:
+  skip_genome_workflow: false
+  res_dir: "TEST"
+
+config-genomes:
+  CheckM_data: ""
+  GTDB: ""
+  GTDB_fa_min_af: 0.65
+  GTDB_isani: false
+  GTDB_mash:
+      k: 16,
+      s: 5000,
+      d: 0.1,
+      v: 1.0,
+  batch_size: 5
+  genome_extension: "fna.gz"
+  low_memory: false
+  merge_with: null
+  taxonomy_wf:
+    enable: false
+    rank: null
+    taxon: null
+
+config-ccya:
+  glyx3_msa: null
+  gly1_msa: null
+  gly2_msa: null
+  gly3_msa: null
+  nterdb: null
+  glyx3-evalue: 1e-20
+  glyx3-coverage: 0.6
+  Z: 10000 #for glyx3 hmmsearch only
+  domZ: null

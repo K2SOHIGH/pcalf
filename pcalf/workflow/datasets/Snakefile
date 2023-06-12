@@ -1,0 +1,34 @@
+configfile: "config/config.yaml" 
+
+import os
+import yaml
+import logging
+import glob
+import gzip
+from datetime import date
+
+RESDIR = config["res_dir"]
+
+
+def _all(wildcards):
+    out = checkpoints.dm_download_checkpoint.get(**wildcards).output 
+    assemblies = [] 
+    genome_dir = os.path.join(RESDIR, "ncbi_dataset","data")
+    for g in os.listdir(genome_dir):
+        if g.startswith("GCA_") or g.startswith("GCF_"):
+            assemblies.append(g)
+    if assemblies : # There is no new assembly so we stop here.
+        return os.path.join(RESDIR,"genomes.yaml"),
+    else:
+        return out
+        
+rule all:
+    input:
+        _all, 
+
+
+
+        
+include: "rules/translate.smk"
+include: "rules/download.smk"
+include: "rules/fetch.smk"

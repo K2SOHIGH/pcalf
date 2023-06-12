@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>pcalf</title>
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.0/FileSaver.min.js"></script>   
+        <script src="https://cdn.plot.ly/plotly-2.20.0.min.js" charset="utf-8"></script>
+    <style>
+        {{ css }}
+    </style>
+    </head>
+    <body>
+        <div id="overlay">
+            <div class=overlay-loader>
+                <!-- <span class="loader"></span> -->
+                <div class="lds-roller"><div></div><div></div><div></div><div></div><div></div><div></div><div></div><div></div></div>
+                
+            </div>
+        </div>        
+
+        <!-- TOP NAVIGATION -->
+
+        <div id="top-nav">                                
+            <ul id="index-list">                    
+                    <li><h1>PCALF</h1></li>
+                    <li><a href="#overview">Assembly Overview</a></li>
+                    <li><a href="#plots">Calcyanin Overview</a></li>
+                    <li><a href="#decision_tree">Calcyanin classification</a></li>
+                    <li><a href="#ModOrg">Modular organization</a></li>
+                    <li><a href="#Datas">Browse datas</a></li>     
+                    <li id="top-nav-right-item"><a href="#about">About</a></li>                   
+            </ul>                                                                            
+        </div>
+
+
+        <div id="content-index-container">                    
+            <div id="content-pannel">
+                <section>
+                    <div style="display: flex; justify-content: space-between;"><h1>Overview.</h1><span class='icon toggle-section toggle-on-section'></span></div>
+                    <div class="section_container" id="overview">   
+                        <div class="tooltip icon">
+                            <span class="tooltiptext tooltiptext-right" style="width: 40vw!important;">
+                                <p>
+                                    RedLevel stand for redundancy level. GenBanK and RefSeq assembly have a unique identifier but the same assembly can be found in GenBanK
+                                    and/or RefSeq. One assembly can have mulitple version (including minor change in their annotation for example). Here, several levels were defined
+                                    to overcome the redundancy implied by assembly versionning and the database duo GenBank-RefSeq.
+                                </p>
+                                <br>          
+                                <p> There are 4 levels of redundancy : </p>
+                                <br>
+                                <ul>
+                                    <li><b>Organism</b> : we considere only one assembly at the strain level. (e.g if there are 13 assemblies ccyA+ for Microcystis aeruginosa then only one will be considered).</li>
+                                    <li><b>UID</b> : we considere only one assembly that could be present under GenBanK and/or RefSeq in different version.</li>
+                                    <li><b>UIDV</b> : we considere only one assembly version that could be present under GenBanK and/or RefSeq.</li>
+                                    <li><b>Accession</b> : We considere all version of all assembly present in both GenBank and RefSeq</li>
+                                </ul>                          
+                            </span>                   
+                        </div>
+                        <div class=metrics>
+                                <p>This section show the percentage of genome entry at different level of redundancy with or without ccyA.</p>                                
+                                <!-- The ccyA~ label  indicate that one assembly is found in both GenBanK and RefSeq databases
+                                but the GenBank version and the RefSeq version do not share the same genotype regarding the ccyA gene
+                                (i.e one is ccyA+ , the other is ccyA-).</span>                                -->
+                            {{ metrics_fig }}
+                        </div>                                                
+                    </div>
+                </section>
+                
+                <section>
+                    <div style="display: flex; justify-content: space-between;"><h1>Graphical overview.</h1><span class='icon toggle-section toggle-on-section'></span></div>
+                    <div class="section_container" id="plots">
+                        <!-- <div class="tooltip icon">
+                            <span class="tooltiptext tooltiptext-right">
+                                The first chart of this section show the increasing number of genome and calcyanin over the time.
+                                <br>
+                                The second one is called a sunburst plot and show the number of sequence by categories in a hierarchical way, starting from the N-ter type.
+                                If you click on a specific area you will see the number of sequences for each sub-catergories. 
+                            </span>
+                        </div> -->
+                        <p>The chart below show the increasing number of genome at different level of redundancy over the time.</p>
+                        {{ genome_over_time }} 
+
+                        <p>The lineplot below show the total number of calcyanin sequences  over the time for the higher level of redundancy. Therefore there might be duplicated sequences due to GenBank/RefSeq versionning and assembly versionning.</p>
+                        {{ sequence_over_time }} 
+                        <div style="display:flex">
+                            <div class='button sms_button button_active inline-block' target=sunburst>Sunburst</div>
+                            <div class='button sms_button inline-block' target=treemap>Treemap</div>
+                        </div>
+                        <div>
+                            <p>
+                                Sunburst and treemap chart display the same type of data.  They show the number of sequence by categories in a hierarchical way.
+                                Starting from the N-ter type to the date of analysis. If you click on a specific area you will see the number of sequences for each sub-catergories. 
+                            </p>
+                            <div id=sunburst class="shown  sms_plot"> {{ sunburst }} </div> 
+                            <div id=treemap  class="hidden sms_plot"> {{ treemap }} </div>                        
+                        </div>
+                    </div>
+                </section>
+
+                <section>
+                    <div style="display: flex; justify-content: space-between;"><h1>Calcyanin classification.</h1><span class='icon toggle-section toggle-on-section'></span></div>
+                    <div class="section_container" id="decision_tree">   
+                        <!-- <div class="tooltip icon">
+                            <span class="tooltiptext tooltiptext-right">
+                                The decision tree below is used to classify sequences with a significative match against the GlyX3 HMM profile.
+                                Red and green edges indicate respectively negative and positive answers.
+                                Shortly, for sequences with a match against the GlyX3 HMM profile, we look at the presence and order on the sequence
+                                of each Glycine Zipper and we use a set of known N-ter to infer the nature of the N-ter extremity of those  
+                                sequences. Finaly a label is assign for each of them depending on their modular organization.
+                            </span>
+                        </div> -->
+                        <p>The decision tree below is used to classify sequences with a significative match against the GlyX3 HMM profile.
+                            Red and green edges indicate respectively negative and positive answers.
+                            Shortly, for sequences with a match against the GlyX3 HMM profile, we look at the presence and order on the sequence
+                            of each Glycine Zipper and we use a set of known N-ter to infer the nature of the N-ter extremity of those  
+                            sequences. Finaly a label is assign for each of them depending on their modular organization.</p>
+                        {{ decision_tree }}
+                    </div>
+                </section>
+
+                <section>
+
+                    <div style="display: flex; justify-content: space-between;"><h1>Modular Organization. </h1><span class='icon toggle-section toggle-on-section'></span> </div>
+                    <div class="section_container" id="ModOrg">
+                        <div class="tooltip icon">
+                            <span class="tooltiptext tooltiptext-right">
+                                Note that if you click on a sequence, then you will be redirected to the browse datas section with detailed informations about the selected sequence.
+                            </span>
+                        </div>
+                        <p>
+                            This section is dedicated to the modular organization of the calcyanin.
+                            Sequences are grouped based on their N-ter type whatever their flag (see Calcyanin classification section). 
+                            <br>
+                            It makes it possible to visualize the size of the sequences and the position of the different domains. 
+                        </p>
+                        <div style="display:flex">
+                            <div class='button oms_button button_active inline-block' target=CoBaHMA-type >CoBaHMA-type</div>
+                            <div class='button oms_button inline-block' target=X-type>X-type</div>
+                            <div class='button oms_button inline-block' target=Z-type>Z-type</div>
+                            <div class='button oms_button inline-block' target=Y-type>Y-type</div>
+                            <div class='button oms_button inline-block' target=Unknown-type>Unknown-type</div>
+                            <span class="icon expand_next"></span>
+                        </div>
+                        
+                        <div class=constrain_height_div>
+                            <div id=CoBaHMA-type class="shown oms_plot"> {{ cobahma_oms }} </div>
+                            <div id=X-type class="hidden oms_plot"> {{ x_oms }} </div>
+                            <div id=Z-type class="hidden oms_plot"> {{ z_oms }} </div>
+                            <div id=Y-type class="hidden oms_plot"> {{ y_oms }} </div>
+                            <div id=Unknown-type class="hidden oms_plot"> {{ unknown_oms }} </div>
+                        </div>
+                                  
+                    </div>
+                </section>
+
+                <section>
+
+                    <div style="display: flex; justify-content: space-between;"><h1>Browse datas</h1><span class='icon toggle-section toggle-on-section'></span></div>
+                    
+                    <div class="section_container" id="Datas">
+                        <div class="tooltip icon">
+                            <span class="tooltiptext tooltiptext-right">
+                                <p>                                    
+                                    Input field above the list can be used to filter entries based on major attributes.
+                                    <br>                                
+                                    Clicking on an entry will give you access to the protein sequence(s) attached to it (if any). Related 
+                                    informations about the assembly and/or the sequence will be shown at the end of the section.
+                                    <br>
+                                    Additionnaly, you can use the green icon on the right of a ccyA+ entry to add to cart.       
+                                    <br>
+                                    The MULTIPLE flag indicate that for this genome, multiple sequences had a hit against the GlyX3 HMM profile. 
+                                </p>
+                            </span>
+                        </div>
+                        <p>
+                            The browse data section contain all the datas about genomes processed by pcalf-annotate-workflow, from genomes to calcyanin features. 
+                            You can filter datas based on Organism name, accession , sequence accession, flag or N-ter type. For that you should use the search bars below. The keyword order doesn't matter.
+                            On click, a detailed view of the entry will be produced, including genome metadatas , and sequence informations if any.
+                        </p>   
+                        <div class="searchbar-div">
+                            <input  type="text" class="input_list searchbar" ul="card-ul" placeholder="Search + press enter" title="">
+                            <span   class="icon clear-input" ul="card-ul"></span>
+                        </div>
+                        <div class="search-result"></div>
+                        <div id="browse_data">
+
+                            <div class="searchable_list">                                
+                                <ul class=data-list id="card-ul">
+                                </ul>
+                            </div>
+                        </div>
+ 
+                        <div id="Cards-container">
+                            <div id="Cards">
+                                <div id="Genome-card" class="card"></div>
+                                <div id="Protein-card" class="card"></div>
+                                <div id="Gene-card" class="card"></div>
+                                <div id="Feature-card" class="card"></div>
+                                <div id="Hit-card" class="card"></div>
+                                
+                            </div> 
+                        </div>
+                    </div>                            
+                </section>
+
+
+                <section>   
+                    <div style="display: flex; justify-content: space-between;"><h1>About. </h1><span class='icon toggle-section toggle-on-section'></span> </div>
+                    <div class="section_container" style="position:relative" id="about">
+                        <p>
+                            The picture below describe the workflow use by <a href="https://github.com/K2SOHIGH/pcalf/tree/workflow" target="_blank">pcalf</a> to retrieve calcyanin from a set of protein sequence or directly from genomes.                                
+                        </p>
+                        <div id="workflow-svg">                            
+                            {{ workflow }}       
+                        </div>                        
+                    </div>
+                </section>
+
+                    
+            </div>                  
+               
+            <div id="right-nav">                                
+                <div class="stickyTop100px"> 
+                    <div class="tooltip icon">
+                        <span class="tooltiptext tooltiptext-left">
+                            Download sequence or features in fasta format, by batch or based on selection.
+                            You can select items from the "browse datas" section. You can then download a specific feature, gene or protein for those sequences.
+                            On the other hand, if you want all ccyA gene for a specific type of calcyanin , e.g Calcyanin with known N-ter of type Y-type, then you can go with the batch download part.
+                        </span>
+                    </div>              
+                    <div style='display:flex;'>
+                        <h2>Cart</h2>
+                        <span class="icon clear_cart"></span>
+                    </div>
+                    <div id="Cart" data-placeholder="Empty cart..."></div>
+                    <!-- <h2>Download cart</h2> -->
+                    <div id="cart_download">
+                        <select class=select name="ftype" id="ftype">
+                            <option value="">--Please choose a format--</option>
+                            <option value="faa">protein (complete sequence)</option>
+                            <option value="fna">gene (complete sequence)</option>    
+                            <option value="GlyX3">GlyX3 only</option>    
+                            <option value="Gly1">Gly1 only</option>    
+                            <option value="Gly2">Gly2 only</option>    
+                            <option value="Gly3">Gly3 only</option>    
+                            <option value="N-ter">N-ter only</option>    
+                        </select>
+                        <div class="button download-cart">Download fasta</div>
+                        <div class="download-warn"></div>
+                    </div>
+                    <h2>Batch download</h2>
+                    <div id="batch_download">
+                        <select class=select name="n-ter" id="nter-select">
+                            <option value="">--Please choose the n-ter family--</option>
+                            <option value="all">All</option>
+                        </select>
+                        <select class=select name="flag" id="flag-select">
+                            <option value="">--Please choose a flag--</option>
+                            <option value="all">All</option>
+                        </select>
+                        <select class=select name="ftype" id="ftype">
+                            <option value="">--Please choose format--</option>
+                            <option value="faa">protein (complete sequence)</option>
+                            <option value="fna">gene (complete sequence)</option>    
+                            <option value="GlyX3">GlyX3 only</option>    
+                            <option value="Gly1">Gly1 only</option>    
+                            <option value="Gly2">Gly2 only</option>    
+                            <option value="Gly3">Gly3 only</option>    
+                            <option value="N-ter">N-ter only</option>    
+                        </select>
+                        <div class="button download-batch">Download fasta</div>
+                        <div class="download-warn"></div>
+                    </div>
+                </div> 
+            </div>
+        </div>
+
+
+
+
+    <footer></footer>
+    </body>
+</html> 
+
+<script>
+
+    // datas entry point
+    const DATAS = {{ datas }}
+    
+    // include jquery
+    {{ js }}
+
+    window.dispatchEvent(new Event('resize'));
+
+</script>
+
+

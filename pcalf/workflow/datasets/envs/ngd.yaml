@@ -1,0 +1,12 @@
+name: taxonkit
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python=3.9
+  - ncbi-genome-download
+  - pandas
+  - ete3
+  - pyyaml
+prefix: /Users/maxime/miniconda3/envs/taxonkit

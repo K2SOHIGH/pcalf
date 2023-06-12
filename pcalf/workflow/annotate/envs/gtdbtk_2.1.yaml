@@ -1,0 +1,16 @@
+name: gtdbtk
+channels:
+- conda-forge
+- bioconda
+dependencies:
+- python=3.9
+- pip
+- prodigal>=2.6.2
+- hmmer>=3.1b2
+- pplacer>=1
+- fastani>=1.32
+- fasttree>=2.1.9
+- mash>=2.2
+- pip:
+  # works for regular pip packages
+  - gtdbtk>=2.1

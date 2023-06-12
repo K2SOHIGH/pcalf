@@ -1,0 +1,37 @@
+package:
+  name: "pcalf"
+  version: "1.1.0"
+
+source:
+  git_url: https://github.com/K2SOHIGH/pcalf
+
+requirements:
+  host:
+    - python
+    - setuptools
+  build:
+    - python
+  run:
+    - python==3.9
+    - snakemake==7.22
+    - blast
+    - plotly==5.11.0
+    - pandas==1.5.3
+    - biopython==1.81
+    - python-igraph==0.10.4
+    - requests
+    - tqdm==4.64.1
+    - pyhmmer==0.7.1
+    - pyyaml>=6
+    - numpy>=1.21
+
+about:
+  home: https://github.com/K2SOHIGH/pcalf
+  license: MIT
+  license_familY: MIT
+  license_file: LICENSE
+  summary: ""
+
+extra:
+  recipe-maintainers:
+    - k2sohigh

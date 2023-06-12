@@ -1,19 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-        
-               _ (.".) _    
-              '-'/. .\'-'   
-    pcalf      ( o o )     
-                 `"-"`  jgs    
-
-
-        pcalf stand for python CALcyanin Finder
-        The calcyanin protein will be search and annotated within your input file(s) following three steps:
-            1) the glycine triplication specific of calcyanin will be searched using a specific HMM profile.
-            2) glycine zipper will be annotated individually using specifics HMM models for sequences with a glycine triplication.
-            3) the N-ter extremity of sequences with a glyX3 will be annotated using blastp and known n-ter as subject database.
-"""
 
 
 import argparse
@@ -26,32 +12,18 @@ import multiprocessing
 from importlib import resources
 import pandas as pd
 
-from pcalf import datas as pcalf_datas
-from pcalf.core import search,bioseq,biohmm
-from pcalf.utils import log
+
+import pcalf.datas as datas
+from pcalf.core import search,bioseq,biohmm,log
 
 
+DATASDIR = os.path.join(resources.files(datas))
 
-
-logging.basicConfig(
-    format="%(asctime)s [%(threadName)-12.12s] [%(levelname)-5.5s]  %(message)s",
-    level=logging.INFO,
-    handlers=[]
-)
-
-DATASDIR = os.path.join(resources.files(pcalf_datas))
-print(DATASDIR)
 def get_args():
     parser = argparse.ArgumentParser(
-        description="""pcalf
-                        
-    pcalf stand for Python CALcyanin Finder
-
-    The input fasta file(s) will be scanned following three steps:
-    - First a specific HMM profile of the glycine triplication is searched using HMMSEARCH and only sequence with a hit above coverage and E-value threshold are retained.
-    - Secondly, those sequences are more precisely annotated using specifics HMM profiles for each glycine zipper in order to define their modular organization for their C-ter extremity.
-    - Finally, a set of known N-ter is blasted against them and the nearest neighbor is retained as (potential) N-ter type.
-    
+        description="""                        
+    pcalf 
+    Search calcyanin protein in one or multiple files containing CDS.
     """,
         formatter_class= argparse.RawTextHelpFormatter
     )
@@ -62,9 +34,6 @@ def get_args():
     parser.add_argument('-o', dest='res_dir', type=str, required=True,
                         help='Output directory. pcalf will ouput several files including updated HMMs and MSAs, a feature table and a summary.')   
 
-    parser.add_argument('--max-iteration', type=int, default = 1,
-                        help="Number of iteration.")
-
     parser.add_argument('--iterative-update', action="store_true",
                         help="If set, HMM profiles will be updated by aligning one sequence by one sequence. ")
 
@@ -72,15 +41,22 @@ def get_args():
                         default = DATASDIR + "/GlyX3.msa.fa", 
                         help='Path to GlyX3 msa (default: %(default)s). A weighted HMM will be built from it.')                                     
 
-    parser.add_argument('--domz', dest='domz', type=int, default=10000,
-                        help='Sequence space size for hmmsearch (default: %(default)s).')     
+    parser.add_argument('-Z', dest='Z', type=int, default=None,
+                        help='The effective number of comparisons done, for E-value calculation.\
+                            Leave as None to auto-detect by counting the number of sequences queried.\
+                            (default: %(default)s).') 
+
+    parser.add_argument('--domZ', dest='domZ', type=int, default=None,
+                        help='The number of significant sequences found, for domain E-value calculation.\
+                            Leave as None to auto-detect by counting the number of sequences reported. \
+                            (default: %(default)s).')     
 
     parser.add_argument('--glyx3-coverage', dest='glyx3_coverage_threshold', 
                         type=float,default=0.6,
                         help="Minimal coverage (default: %(default)s)." )
     
     parser.add_argument('--glyx3-evalue', dest='glyx3_evalue_threshold', 
-                        type=float,default=1e-21,
+                        type=float,default=1e-20,
                         help="Glyx3 E-value when considering Glyx3 Hits (default: %(default)s).")
                         
     parser.add_argument('--gly1-msa', dest = 'gly1_msa', 
@@ -96,7 +72,7 @@ def get_args():
                         help='path to GlyZip3 msa (default: %(default)s). A weighted HMM will be built from it.')                        
 
     parser.add_argument('--glyzip-E-value', dest='glyzip_e_evalue', 
-                        type=float,default=3.6e-4,
+                        type=float,default=1e-10,
                         help = "Glyzip E-evalue when considering Gly(1|2|3) Hits (default: %(default)s)." )
     parser.add_argument('--glyzip-coverage', dest='glyzip_coverage', 
                         type=float,default=0.7,
@@ -132,16 +108,17 @@ def get_args():
 
 def main():
     args = get_args()
-
+    logger = logging.getLogger()
     # Setup Logger and Handlers
     level = logging.INFO
     if args.debug:
         level = logging.DEBUG
+    logger.setLevel(level)
     if not args.quiet:
-        console = logging.StreamHandler()
-        console.setLevel(level)
+        console = logging.StreamHandler()        
         console.setFormatter(log.CustomFormatter())
-        logging.getLogger('').addHandler(
+        console.setLevel(level)
+        logger.addHandler(
             console
         )
     if args.log:
@@ -149,31 +126,29 @@ def main():
         fhandler = logging.FileHandler(args.log)
         fhandler.setLevel(level)
         fhandler.setFormatter(log.CustomFormatter())
-        logging.getLogger('').addHandler(
+        logger.addHandler(
             fhandler
         )
     
+    logger.info("PCALF")
+    logger.debug("DEBUG")
+
     if not shutil.which("blastp"):
-        logging.error("blast not found, please, considere installing it using conda install -c bioconda blast.")
+        logger.error("blast not found, please, considere installing it using conda install -c bioconda blast.")
         exit(-1)
     else:
-        logging.debug("blastp found : {}".format(shutil.which("blastp")))
-
+        logger.debug("blastp found : {}".format(shutil.which("blastp")))
+    
+    
     res_dir = os.path.abspath(args.res_dir)
-
     if os.path.exists(res_dir):
         if args.force:
-            logging.debug("{} directory have been removed because of the --force flag.".format(res_dir))
+            logger.debug("{} directory have been removed because of the --force flag.".format(res_dir))
             shutil.rmtree(res_dir)            
         else:
-            logging.error("Output directory already exist , Bye !")
+            logger.error("Output directory already exist , Bye !")
             exit(-1)
     
-
-    # if (args.fasta and args.input) or (not args.fasta and not args.input) :
-    #     logging.error("Please choose one between --fasta and --input-file...")
-    #     exit(-1)
-
     fastas = []
     names = []
     if not args.input.endswith(".gz"): 
@@ -192,27 +167,26 @@ def main():
         with gzip.open(args.input ,'rt') as stream:
             for line in stream.readlines():                
                 if not line.startswith(">"): # Not a fasta file
-                    logging.error("{} is not a fasta file.".format(args.input))
+                    logger.error("{} is not a fasta file.".format(args.input))
                 else: # fasta file 
                     fastas.append(args.input)
                     names.append(os.path.basename(args.input))
                     break
 
 
-    logging.info("Init HMMs from MSAs.")    
+    logger.info("Init HMMs from MSAs.")    
     glyx3 = biohmm.Hmm("Glyx3",args.glyx3_msa)
     gly1 = biohmm.Hmm("Gly1",args.gly1_msa)
     gly2 = biohmm.Hmm("Gly2",args.gly2_msa)
     gly3 = biohmm.Hmm("Gly3",args.gly3_msa)
     
-    logging.info("Increase Glycine weight.")
+    logger.info("Increase Glycine weight.")
     glyx3.hmm = search.increase_glycine_weight( glyx3,0.2 )
     gly1.hmm  = search.increase_glycine_weight( gly1,0.2 )
     gly2.hmm  = search.increase_glycine_weight( gly2,0.2 )
     gly3.hmm  = search.increase_glycine_weight( gly3,0.2 )
 
-
-    logging.info("Init N-Ter DB.")
+    logger.info("Init N-Ter DB.")
     nterdb = search.parse_nterdb(args.nterdb)
     
     # Initital number of sequences.
@@ -221,36 +195,39 @@ def main():
     _gly2_nseq = gly2.hmm.nseq
     _gly3_nseq = gly3.hmm.nseq
 
-    logging.info("Start search.")
-    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 , u_nter , seq_per_iteration = search.search(
-        res_dir,
+    logger.info("Start search.")
+    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 , u_nter = search.pcalf(
+        #res_dir,
         fastas,
         names,
         glyx3,
         gly1,
         gly2,
         gly3,
-        nterdb,        
-        domz = args.domz,
+        nterdb, 
+        Z = args.Z,       
+        domZ = args.domZ,
         glyx3_evalue_threshold=args.glyx3_evalue_threshold,  
         glyx3_coverage_threshold=args.glyx3_coverage_threshold,  
         glyzip_evalue_threshold= args.glyzip_e_evalue,
         glyzip_coverage_threshold = args.glyzip_coverage,
         nter_coverage_threshold = args.nter_coverage, 
         nter_evalue_threshold  =  args.nter_evalue,
-        max_iteration=args.max_iteration, 
         is_update_iterative=args.iterative_update,
     )
    
-    logging.info("The search is over.")
+    logger.info("The search is over.")
 
-    logging.info("# Number of calcyanin detected : {}".format(len(calseq.sequences)))
-    logging.info("# N_seqs within Glyx3 HMM : {} [+{}]".format(u_glyx3.hmm.nseq, u_glyx3.hmm.nseq -  _glyx3_nseq))
-    logging.info("# N_seqs within Gly1 HMM : {} [+{}]".format(u_gly1.hmm.nseq, u_gly1.hmm.nseq - _gly1_nseq))
-    logging.info("# N_seqs within Gly2 HMM : {} [+{}]".format(u_gly2.hmm.nseq, u_gly2.hmm.nseq - _gly2_nseq))
-    logging.info("# N_seqs within Gly3 HMM : {} [+{}]".format(u_gly3.hmm.nseq, u_gly3.hmm.nseq - _gly3_nseq))
+    logger.info("# N_seqs within Glyx3 HMM : {} [+{}]".format(
+        u_glyx3.hmm.nseq, u_glyx3.hmm.nseq -  _glyx3_nseq))
+    logger.info("# N_seqs within Gly1 HMM : {} [+{}]".format(
+        u_gly1.hmm.nseq, u_gly1.hmm.nseq - _gly1_nseq))
+    logger.info("# N_seqs within Gly2 HMM : {} [+{}]".format(
+        u_gly2.hmm.nseq, u_gly2.hmm.nseq - _gly2_nseq))
+    logger.info("# N_seqs within Gly3 HMM : {} [+{}]".format(
+        u_gly3.hmm.nseq, u_gly3.hmm.nseq - _gly3_nseq))
     
-    logging.info("Dumping HMMs.") 
+    logger.info("Dumping HMMs.") 
     hmmdir = os.path.join(res_dir,"HMM")
     os.makedirs(hmmdir,exist_ok=True)
     u_glyx3.hmm.write(open(hmmdir + "/Glyx3.hmm","wb"))
@@ -258,25 +235,27 @@ def main():
     u_gly2.hmm.write(open(hmmdir + "/Gly2.hmm","wb"))
     u_gly3.hmm.write(open(hmmdir + "/Gly3.hmm","wb"))
 
-    logging.info("Dumping MSAs.")
-    msadir = os.path.join(res_dir,"MSA")
+    logger.info("Dumping MSAs.")
+    msadir = os.path.join(res_dir,"MSA")    
     os.makedirs(msadir,exist_ok=True)
     u_glyx3.msa.write(open(msadir+"/Glyx3.msa.fa","wb"),format="afa")
     u_gly1.msa.write(open(msadir+"/Gly1.msa.fa","wb"),format="afa")
     u_gly2.msa.write(open(msadir+"/Gly2.msa.fa","wb"),format="afa")
     u_gly3.msa.write(open(msadir+"/Gly3.msa.fa","wb"),format="afa")
     
-    logging.info("Dumping N-ter table.")
+    logger.info("Dumping N-ter table.")
     with open(res_dir+"/N-ter-DB.tsv","w") as nterout:
         for nterid, n in u_nter.items():
             nterout.write("{}\t{}\t{}\n".format(n[0],nterid,n[1]))
 
-    logging.info("Dumping feature table.")
+    logger.info("Write feature table.")
     features = calseq.to_feature_table()
     features.to_csv(res_dir + "/pcalf.features.tsv",sep="\t",header=True,index=True)
-    
+    logger.info("Write hits table")
+    hits = calseq.to_hits_table()
+    hits.to_csv(res_dir + "/pcalf.hits.tsv",sep="\t",header=True,index=True)
 
-    logging.info("Make summary.")
+    logger.info("Make summary.")
     summary_datas = []
     for sequence, seq_features_df in features.groupby("sequence_id"):
         cterom = ",".join(
@@ -301,7 +280,7 @@ def main():
                 "nter_neighbor": nter_neighbor,
                 "cter":cterom,
                 "sequence":str(calseq.get_seq_by_id(sequence).seq),
-                "iteration":seq_per_iteration[sequence]
+                # "iteration":seq_per_iteration[sequence]
             }
         )
     if summary_datas:
@@ -309,5 +288,6 @@ def main():
     else:
         df = pd.DataFrame(columns=["sequence_accession","sequence_src","flag","nter","nter_neighbor","cter","sequence","iteration"]).set_index("sequence_accession")
     df.to_csv(res_dir + "/pcalf.summary.tsv",sep="\t",index=True,header=True)
+
 if __name__ == "__main__":
     sys.exit(main())

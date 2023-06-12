@@ -1,0 +1,129 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+
+import argparse
+import os
+import logging
+import multiprocessing
+from importlib import resources
+
+
+from pcalf.core import log, PcalfSnake
+from pcalf.workflow import datasets
+
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.propagate = False
+
+
+def get_args():
+    parser = argparse.ArgumentParser(
+        description="""
+
+    pcalf-dataset
+    Retrieve genome and annotation from GenBank and RefSeq using NCBI accession or NCBI taxid
+
+    """,
+        formatter_class= argparse.RawTextHelpFormatter
+    )
+    parser.add_argument('-t', '--taxid', default = None , type=str , 
+            help = "One ore more taxid seperated by a comma. \
+                Mutually exclusive options with -a / --accession. [None]")   
+       
+    parser.add_argument('-a',  "--accession", default=None , type=str , 
+            help = "File with one NCBI assembly accession per line(e.g, GCA_937936705.1). \
+                Mutually exclusive options with -t / --taxid. [None]")
+    
+    parser.add_argument('-e', '--exclude', type=str, 
+            help = "File with NCBI accession(s) that should be exclude from download. [None]")
+
+    parser.add_argument('-o', '--outdir', type=str,
+            default = "./wpcalf",
+            help = "Where results will be stored.")
+
+    parser.add_argument('-g', '--group', default="bacteria", 
+              choices=['all', 
+                                'archaea', 
+                                'bacteria', 
+                                'fungi', 
+                                'invertebrate', 
+                                'metagenomes', 
+                                'plant', 
+                                'protozoa', 
+                                'vertebrate_mammalian', 
+                                'vertebrate_other', 
+                                'viral'], 
+            help = "Taxonomic group, see ncbi-genome-download documentation \
+                for details. [bacteria]")
+    
+    parser.add_argument("--debug", action="store_true")
+
+    parser.add_argument('--snakargs', type=str, 
+              default="--printshellcmds -j{} --use-conda".format(multiprocessing.cpu_count()),
+              help='Snakemake arguments.')
+
+    args = parser.parse_args()
+    return args
+
+
+def main():
+    args = get_args()
+ # SETUP LOGGER
+    level = logging.INFO
+    if args.debug:
+        level = logging.DEBUG
+    logger.setLevel(level)
+    console = logging.StreamHandler()
+    console.setLevel(level)
+    console.setFormatter(log.CustomFormatter())
+    logger.addHandler(
+        console
+    )
+
+    logger.info("PCALF-DATASET")
+    logger.debug("DEBUG")
+
+    # Check input
+    if (args.taxid is None and args.accession is None) or (args.taxid and args.accession):
+        logger.error("You should specify at least one taxid [--taxid] or provide a file with one assembly accession per line. [--accession]")
+        exit(-1)
+
+
+
+    # CREATE DATAS DIRTECTORY
+    outdir = os.path.abspath(args.outdir)
+    os.makedirs(outdir,exist_ok=True)
+    
+    logfile = os.path.join(outdir,"pcalf.dataset.log")
+    fhandler = logging.FileHandler(logfile)
+    fhandler.setLevel(level)
+    logger.addHandler(
+        fhandler
+    )   
+    
+    logger.info("Datas will be stored under {}".format(outdir))    
+    logger.info("Output directory :  {}".format(outdir)) 
+
+    # MAKE CONFIG FILE    
+    # Update Snakefile configuration with CLI values and run workflow.
+    datasets_module_path = resources.files(datasets)
+    datasets_module = PcalfSnake.Snakemake(datasets_module_path)
+
+    datasets_module.config["res_dir"] = str(outdir)
+    datasets_module.config["taxid"] = int(args.taxid) if args.taxid else args.taxid
+    datasets_module.config["include_accession"]= args.accession
+    datasets_module.config["exclude_accession"]= args.exclude
+    datasets_module.config["group"] = args.group
+
+    configfile = os.path.join(outdir, "config.yaml")
+    datasets_module.dump_config(configfile)
+    snakargs = args.snakargs.split()
+    snakargs.extend(["--configfile" , configfile])
+    
+    datasets_module.run(snakargs)
+    logger.info("pcalf-dataset done.")
+
+if __name__ == '__main__':
+    main()

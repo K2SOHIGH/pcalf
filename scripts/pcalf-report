@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import argparse
+import logging
+import importlib.resources as resources
+
+from pcalf.core import log , PcalfDB
+from pcalf.report import render
+
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.propagate = False
+
+def get_args():
+    parser = argparse.ArgumentParser(
+        description="""
+    pcalf-report
+    produce an html report from the sqlite3 db file produced by pcalf-annotate-workflow
+    """,
+        formatter_class= argparse.RawTextHelpFormatter
+    )
+    parser.add_argument("--db", required=True, help="Sqlite3 file produced by pcalf-annotate-workflow")
+    parser.add_argument("--out", required=True, help="Output file")
+    args = parser.parse_args()
+    return args
+
+def main(): 
+    args = get_args()    
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(log.CustomFormatter())
+    logger.addHandler(
+        console
+    )
+    if not PcalfDB.PcalfDB(args.db).is_schema_valid():
+        #logger.error("Current database schema is different from the schema of the database you provide.")
+        #exit(-1)
+        pass
+
+    templatedir = resources.files(render.__package__)    
+    render.render(args.db,
+                  templatedir,
+                  args.out)
+
+
+if __name__=="__main__":
+    main()

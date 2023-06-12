@@ -1,0 +1,326 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+import os
+import logging
+import datetime
+import shutil
+import hashlib
+import importlib.resources as resources
+
+import click
+from click_option_group import optgroup, RequiredMutuallyExclusiveOptionGroup
+import pandas as pd
+
+from pcalf.core import log 
+from pcalf.workflow import HarleyDB
+from pcalf.workflow import HarleySnake
+from pcalf.workflow import wpcalf 
+from pcalf.workflow import download
+from pcalf.report import render
+
+
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+logger.propagate = False
+
+
+def write_fasta(fastadict,file):
+        os.makedirs(os.path.dirname(file),exist_ok=True)
+        with open(file,'w') as fh:
+            for seqid,sequence in fastadict.items():
+                fh.write(">{}\n{}\n".format(seqid,sequence))
+        return file
+
+@click.group()
+def cli():
+    """ """
+
+
+@click.command()
+@click.option('-t', '--taxid', "taxid", default = None , type=str , 
+            help = "One ore more taxid seperated by a comma. \
+                Mutually exclusive options with -a / --accession. [None]")
+@click.option('-a',  "--accession" , "accession_file" , default=None , type=str , 
+            help = "File with one NCBI assembly accession per line(e.g, GCA_937936705.1). \
+                Mutually exclusive options with -t / --taxid. [None]")
+
+
+@click.option('-e', '--exclude' , 'exclude', type=str, 
+            help = "File with one NCBI accession that should be exclude from download. [None]")
+
+@click.option('-o', '--outdir' , 'outdir', type=str,
+            default = "./wpcalf",
+            help = "Where results will be stored.")
+
+@click.option('-g', '--group', "group_taxo", default="bacteria", 
+              type=click.Choice(['all', 
+                                'archaea', 
+                                'bacteria', 
+                                'fungi', 
+                                'invertebrate', 
+                                'metagenomes', 
+                                'plant', 
+                                'protozoa', 
+                                'vertebrate_mammalian', 
+                                'vertebrate_other', 
+                                'viral'], case_sensitive=False), 
+            help = "Taxonomic group, see ncbi-genome-download documentation \
+                for details. [bacteria]")
+@click.option("--debug", is_flag=True)
+@click.option('--snakargs','snakargs', type=str, 
+              default="--printshellcmds -j1 --use-conda",
+              help='Snakemake arguments.' )
+
+def datasets(taxid, accession_file, exclude, outdir, group_taxo, debug , snakargs ): 
+    # SETUP LOGGER
+    level = logging.INFO
+    if debug:
+        level = logging.DEBUG
+    logger.setLevel(level)
+    console = logging.StreamHandler()
+    console.setLevel(level)
+    console.setFormatter(log.CustomFormatter())
+    logger.addHandler(
+        console
+    )
+
+    logger.info("PCALF-WORKFLOW")
+    logger.debug("DEBUG")
+
+    # Check input
+    if (taxid is None and accession_file is None) or (taxid and accession_file):
+        logger.error("You should specify at least one taxid [--taxid] or provide a file with one assembly accession per line. [--accession]")
+        exit(-1)
+
+
+
+    # CREATE DATAS DIRTECTORY
+    outdir = os.path.abspath(outdir)
+    os.makedirs(outdir,exist_ok=True)
+    
+    harley_log_file = os.path.join(outdir,"wpcalf.log")
+    fhandler = logging.FileHandler(harley_log_file)
+    fhandler.setLevel(level)
+    logger.addHandler(
+        fhandler
+    )   
+    
+    logger.info("Datas will be stored under {}".format(outdir))    
+    logger.info("Output directory :  {}".format(outdir)) 
+
+    # MAKE CONFIG FILE    
+    # Update Snakefile configuration with CLI values and run workflow.
+    download_module_path = resources.files(download)
+    download_module = HarleySnake.Snakemake(download_module_path)
+
+    download_module.config["res_dir"] = str(outdir)
+    download_module.config["taxid"] = int(taxid) if taxid else taxid
+    download_module.config["include_accession"]= accession_file
+    download_module.config["exclude_accession"]= exclude
+    download_module.config["group"] = group_taxo
+
+    configfile = os.path.join(outdir, "config.yaml")
+    download_module.dump_config(configfile)
+    snakargs = snakargs.split()
+    snakargs.extend(["--configfile" , configfile])
+    
+    download_module.run(snakargs)
+    logger.info("pcalf-workflow datasets done.")
+
+
+@click.command()
+@click.option('-i', '--input' , 'input', required=True , type=str , 
+            help = "Yaml file containing path to genome, cds_faa and cds_fna.")
+@click.option('--db', 'db', type=None , 
+            help = " explain here motherfucker...")
+@click.option('-o', '--outdir' , 'outdir', required=True , type=str , 
+            help = "Where datas such as checkm, gtdb-tk or pcalf results will be stored. Note that, for now,\
+            the directory will not be remove if the workflow end correctly.")
+@click.option("--gtdb" , "gtdb"  , default=None , type=str , 
+            help = "path to GTDB. [None]")
+@click.option("--checkm" , "checkm"  , default=None , type=str , 
+            help = "path to checkm datas. [None]")
+@click.option('-q', '--quick', "quick"  , default=False, is_flag=True , 
+            help = ".. explain here .. [False]")
+@click.option('--force', is_flag=True , 
+           help= "Use this flag if you want to resume jobs from a specific instance. [False]" )
+@click.option('--original', is_flag=True , 
+            help = "Use original HMMs and N-ter files for pcalf. [False]")
+@click.option("--debug", is_flag=True)
+
+@click.option('--snakargs','snakargs', type=str, default="",
+            help='snakemake arguments. [None]' )
+def run(input, db , outdir, gtdb , checkm , quick , force , original , debug,  snakargs ): 
+    # Check input
+    def validate_input(input):
+        pass
+
+    
+       
+    
+    # SETUP LOGGER
+    level = logging.INFO
+    if debug:
+        level = logging.DEBUG
+        logger.setLevel(level)
+    
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(log.CustomFormatter())
+    logger.addHandler(
+        console
+    )    
+    logger.info("PCALF-WORKFLOW")
+    if os.path.exists(outdir) and not force:
+        logger.error("{} output directory already exists.".format(outdir))
+        exit(-1)
+    else:
+        outdir = os.path.abspath(outdir)
+        os.makedirs(outdir , exist_ok=True)     
+
+    harley_log_file = os.path.join(outdir,"wpcalf.log")
+    fhandler = logging.FileHandler(harley_log_file)
+    fhandler.setLevel(level)
+    logger.addHandler(
+        fhandler
+    )   
+    
+    logger.debug("DEBUG")
+    logger.info("Output directory :  {}".format(outdir)) 
+
+    # Load DB if provided  else init one.
+    dbfile = os.path.join(outdir,"wpcalf.db")
+    if os.path.exists(dbfile) and force:
+        os.remove(dbfile)    
+    
+    harleydb = HarleyDB.HarleyDB(dbfile)    
+    glyx3 , gly1 , gly2, gly3 , nter = None, None, None, None, None
+
+    if db: #db file provided        
+        #logger.info("Creating DB from {}".format(db))    
+        logger.info("MSAs from {} will be used.".format(db))
+        #shutil.copy(db, dbfile)       
+        externaldb = HarleyDB.HarleyDB(db)    
+
+        if not externaldb.is_schema_valid():
+            logger.error("Current database schema is different from the schema of the database you provide.")
+            exit(-1)
+
+        # write MSAs to output directory:
+        pcalfdatas = os.path.join(outdir,"pcalf_input_datas")
+        gly1  = write_fasta(externaldb.to_msa("gly1") , os.path.join(pcalfdatas,"gly1.msa.fasta" ))
+        gly2  = write_fasta(externaldb.to_msa("gly2") , os.path.join(pcalfdatas,"gly2.msa.fasta" ))
+        gly3  = write_fasta(externaldb.to_msa("gly3") , os.path.join(pcalfdatas,"gly3.msa.fasta" ))
+        glyx3 = write_fasta(externaldb.to_msa("glyx3"), os.path.join(pcalfdatas,"glyx3.msa.fasta"))
+        nter = os.path.join(pcalfdatas,"nter.tsv")
+        nter_df = externaldb.to_df("nterdb")        
+        nter_df.to_csv(nter,header=False,index=False,sep="\t")
+
+
+    if original:
+        glyx3 , gly1 , gly2, gly3 , nter = None, None, None, None, None
+    
+    # MAKE CONFIG FILE    
+    # Update Snakefile configuration with CLI values and run workflow.
+    wpcalf_module_path = resources.files(wpcalf)
+    wpcalf_module = HarleySnake.Snakemake(wpcalf_module_path)
+    wpcalf_module.config["global"]["skip_genome_workflow"] = quick
+    wpcalf_module.config["global"]["res_dir"] = outdir
+    wpcalf_module.config["global"]["input"] = input
+
+    if not quick:
+        if not checkm or not gtdb or not os.path.isdir(checkm) or not os.path.isdir(gtdb):
+            logger.error("GTDB and checkm datas should be specified. If you want to skip this part of the analysis use the --quick flag.")
+            exit(-1)
+
+    wpcalf_module.config["config-genomes"]["CheckM_data"] = checkm
+    wpcalf_module.config["config-genomes"]["GTDB"] =  gtdb
+    
+    wpcalf_module.config["config-ccya"]["glyx3_msa"] = glyx3
+    wpcalf_module.config["config-ccya"]["gly1_msa"]  = gly1
+    wpcalf_module.config["config-ccya"]["gly2_msa"]  = gly2
+    wpcalf_module.config["config-ccya"]["gly3_msa"]  = gly3
+    wpcalf_module.config["config-ccya"]["nterdb"]    = nter
+
+    configfile = os.path.join(outdir, "config.yaml")
+    wpcalf_module.dump_config(configfile)
+    snakargs = snakargs.split()
+    snakargs.extend(["--configfile" , configfile])
+    
+    wpcalf_module.run(snakargs)
+
+    ## EXPECTED OUTPUT FILES
+    files = [
+            (os.path.join(outdir,"pcalf","pcalf.summary.tsv") , "summary" , "sequence_accession" ),
+            (os.path.join(outdir,"pcalf","ccyA.summary.tsv") ,  "ccya" , "sequence_id" ),
+            (os.path.join(outdir,"pcalf","pcalf.features.tsv") , "features" , "sequence_id" ),
+            (os.path.join(outdir,"ncbi-datas","ncbi_metadatas.tsv") , "genomes" , "Accession" ),
+            (os.path.join(outdir,"checkm-res","tables","checkM_statistics_full.tsv") , "checkm" , "Bin Id" ),
+            (os.path.join(outdir,"gtdbtk-res","gtdbtk.ar53.bac120.summary.clean.tsv") , "gtdbtk" , "user_genome" ),
+            (os.path.join(outdir,"pcalf","MSA","Gly1.msa.tsv") , "gly1"   , "sequence_id" ),
+            (os.path.join(outdir,"pcalf","MSA","Gly2.msa.tsv") , "gly2"   , "sequence_id" ),
+            (os.path.join(outdir,"pcalf","MSA","Gly3.msa.tsv") , "gly3"   , "sequence_id" ),
+            (os.path.join(outdir,"pcalf","MSA","Glyx3.msa.tsv") , "glyx3" , "sequence_id" ),
+            (os.path.join(outdir,"pcalf","nter.tsv"), "nterdb", "sequence_id")
+        ]
+
+    # CREATE AND FEED DB        
+    for file, table, pk in files:
+        if os.path.exists(file):
+            logger.info("{} stored as {} in {}".format(
+                os.path.basename(file),
+                table,
+                os.path.basename(dbfile)))
+            df = pd.read_csv(file,sep="\t",header=0)
+            harleydb.feed_db(df, table, pk)
+
+    # CREATE A NEW TABLE WITH 
+    gids = harleydb.get_col_values("genomes","Accession")
+    df = pd.DataFrame(columns = ["Accession","Date"])
+    df.Accession = gids
+    df.Date = datetime.date.today()
+    harleydb.feed_db(df,"harley","Accession")
+
+    # Update DB if necessary
+    if db:
+        tmp = externaldb.to_df("harley")            
+        harleydb.feed_db(tmp,"harley","Accession")
+        for _, table, pk in files:
+            tmp = externaldb.to_df(table)            
+            harleydb.feed_db(tmp,table,pk)
+
+    # check that all sequences in MSA table have the same length !
+    for _,table,pk in files:
+        if table in ["gly1","gly2","gly3","glyx3"]:
+            l = harleydb.get_col_values(table,"sequence")                  
+            for aln in l:
+                if len(aln) != len(l[0]):
+                    logger.warning("Something went wrong with MSA table {}".format(
+                        table))
+
+
+@click.command()
+@click.argument('db')
+@click.argument('out')
+def report(db, out ): 
+    console = logging.StreamHandler()
+    console.setLevel(logging.INFO)
+    console.setFormatter(log.CustomFormatter())
+    logger.addHandler(
+        console
+    )
+    if not HarleyDB.HarleyDB(db).is_schema_valid():
+        logger.error("Current database schema is different from the schema of the database you provide.")
+        exit(-1)
+
+    templatedir = resources.files(render.__package__)
+    render.render(db,templatedir,out)
+
+
+cli.add_command(report)
+cli.add_command(datasets)
+cli.add_command(run)
+
+if __name__ == '__main__':
+    cli()         

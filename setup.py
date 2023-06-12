@@ -7,7 +7,7 @@ with open("README.md", "r", encoding = "utf-8") as fh:
 
 setup(
     name='pcalf',
-    version='1.0.0',
+    version='1.1.0',
     description='Search calcyanin in a set of amino acid sequences',
     long_description = long_description,
     long_description_content_type = "text/markdown",
@@ -32,10 +32,9 @@ setup(
          "python-igraph==0.10.4",
     ],
     python_requires = ">=3.9",
-    packages = find_packages(where="src"),
-    package_dir = {"": "src"},
+    packages = find_packages(),
+    # package_dir = {"": "pcalf"},
     include_package_data=True,
     scripts = [script for script in glob.glob("scripts/*") if not os.path.basename(script).startswith("_") ],
-    py_modules = ["bin"],
     zip_safe=False
 )

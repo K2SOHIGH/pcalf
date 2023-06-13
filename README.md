@@ -44,8 +44,11 @@ its N-terminus type and its C-terminus modular organization.
 ## Installation :
 
 ```bash
-mamba create -n pcalf -c bioconda blast pyhmmer pandas numpy biopython tqdm python=3.9 && conda activate pcalf;
-pip3 install https://github.com/K2SOHIGH/pcalf.git
+mamba create -n pcalf -c k2sohigh pcalf;
+```
+or 
+```bash
+pip3 install pcalf;
 ```
 
 ### Dependencies :

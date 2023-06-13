@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 import os
-import sys
+import argparse
 import logging
 
 import pandas as pd
@@ -41,7 +41,7 @@ def download_prokaryotes_report(report="https://ftp.ncbi.nlm.nih.gov/genomes/GEN
         report = ncbi prokaryotic report
         subgroup = 
     """
-    logging.info("Download prokaryotes.txt report (%s) ...." % report)    
+    logging.info("Prokaryotes report to dataframe(%s) ...." % report)    
 
     df = pd.read_csv(report,sep="\t",header=0,low_memory=False)
     df = df[["Assembly Accession","BioProject Accession","BioSample Accession","TaxID","SubGroup","#Organism/Name","Release Date","Modify Date","Status","FTP Path","Strain"]]
@@ -55,27 +55,27 @@ def download_prokaryotes_report(report="https://ftp.ncbi.nlm.nih.gov/genomes/GEN
     return df
 
 def download_refseq_report(report="https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_refseq.txt"):
-    logging.info("Download RefSeq assembly report (%s) ...." % report)    
+    logging.info("RefSeq assembly report to dataframe (%s) ...." % report)    
 
     df = pd.read_csv(report,sep="\t",dtype='str',skiprows=0,header=1,low_memory=False)
-    df = df[["# assembly_accession","bioproject","biosample","species_taxid","organism_name","seq_rel_date", "assembly_level","ftp_path", "infraspecific_name", "gbrs_paired_asm",	"paired_asm_comp"]]
+    df = df[["#assembly_accession","bioproject","biosample","species_taxid","organism_name","seq_rel_date", "assembly_level","ftp_path", "infraspecific_name", "gbrs_paired_asm",	"paired_asm_comp"]]
     df.columns = ["Assembly Accession","bioproject","biosample","TaxID","#Organism/Name","Release Date","Status","FTP Path","Strain", "gbrs_paired_asm",	"paired_asm_comp"]    
     df["TaxID"] = df.TaxID.fillna(0)
     #df["TaxID_bis"] = df.TaxID_bis.astype(int)
     df.set_index("Assembly Accession",inplace=True)
-    logging.info("Download RefSeq assembly report finished ...." )    
+    # logging.info("Download RefSeq assembly report finished ...." )    
     return df
 
 def download_genbank_report(report="https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_genbank.txt"):
     
-    logging.info("Download GenBank assembly report (%s) ...." % report)    
+    logging.info("GenBank assembly report to dataframe (%s) ...." % report)    
     df = pd.read_csv(report,sep="\t",dtype='str',skiprows=0,header=1,low_memory=False)
-    df = df[["# assembly_accession","bioproject","biosample","species_taxid","organism_name","seq_rel_date", "assembly_level","ftp_path", "infraspecific_name", "gbrs_paired_asm",	"paired_asm_comp"]]
+    df = df[["#assembly_accession","bioproject","biosample","species_taxid","organism_name","seq_rel_date", "assembly_level","ftp_path", "infraspecific_name", "gbrs_paired_asm",	"paired_asm_comp"]]
     df.columns = ["Assembly Accession","bioproject","biosample","TaxID","#Organism/Name","Release Date","Status","FTP Path","Strain", "gbrs_paired_asm",	"paired_asm_comp"]      
     df["TaxID"] = df.TaxID.fillna(0)
     #df["TaxID"] = df.TaxID_bis.astype(int)
     df.set_index("Assembly Accession",inplace=True)
-    logging.info("Download GenBank assembly report finished ...." )    
+    # logging.info("Download GenBank assembly report finished ...." )    
 
     return df
 
@@ -84,9 +84,9 @@ def download_genbank_report(report="https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBL
 def merge_report():
     logging.info("Download NCBI reports  ...." )    
 
-    genbank = download_genbank_report()#report = "assembly_summary_genbank.txt")
-    refseq = download_refseq_report()#report = "assembly_summary_refseq.txt")
-    prok = download_prokaryotes_report()#report = "prokaryotes.txt")
+    genbank = download_genbank_report()
+    refseq = download_refseq_report()
+    prok = download_prokaryotes_report()
     # 1) merge prok and genbank
     logging.info("Merge NCBI reports  ...." )    
     df = pd.concat([prok,genbank],axis=0,sort=False)
@@ -100,11 +100,23 @@ def merge_report():
     
     return derep
     
+def get_snakargs():    
+    return str(snakemake.output)
+
+def get_args():
+    if "snakemake" in globals():
+        return get_snakargs()
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument('out', type=str,
+			help='Output file')   
+    return str(parser.parse_args().out)
+
+
+
     
-    
-    
+
 def main():
-    out = str(snakemake.output)
+    out = get_args()
     # get reports from NCBI ftp server
     df = merge_report()
     df.to_csv(out,sep="\t",header=True,index=True)

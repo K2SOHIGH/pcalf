@@ -113,6 +113,8 @@ rule dm_ncbi_dehydrated_dataset:
         outfile  = os.path.join( RESDIR, "ncbi_dataset.zip"),
         outdir   = RESDIR,
         outfetch = os.path.join( RESDIR, "fetch.txt" ),
+    retries:
+        5
     conda:
         "../envs/ncbi_dataset_14.14.0.yaml"
     shell:
@@ -122,8 +124,7 @@ rule dm_ncbi_dehydrated_dataset:
         "--inputfile - "
         "--dehydrated "
         "--filename {params.outfile} --assembly-version all --include genome,cds && "
-        "unzip -o {params.outfile} -d {params.outdir} || "
-        "touch {output} ; "
+        "unzip -o {params.outfile} -d {params.outdir};"
         
         #rm {params.outfile}; 
 

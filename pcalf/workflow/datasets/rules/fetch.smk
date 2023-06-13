@@ -33,7 +33,6 @@ def get_accession(wildcards):
         if os.path.exists(config["include_accession"]):
             files.append( config["include_accession"])
     if config["taxid"]:
-        #files.append( os.path.join( RESDIR,"tmp","accession.taxid.txt" ))
         files.append( os.path.join( RESDIR,"tmp","accession.report.txt"))
         files.append( os.path.join( RESDIR,"tmp","accession.cli.txt") )
     return files 
@@ -79,40 +78,10 @@ rule dm_ncbi_filter_reports:
     output:
         os.path.join(RESDIR,"tmp",'accession.report.txt'),
     input:
-        reports = os.path.join(RESDIR,'tmp',"reports",'{}.report.tsv'.format(date.today().strftime('%Y-%m'))),
+        report = os.path.join(RESDIR,'tmp',"reports",'accession-ncbi-genbank-refseq.tsv'),
         taxids  = os.path.join(RESDIR,"tmp","taxid.txt"),     
-    conda:
-        "../envs/biopython_1.79.yaml"
     script:
-        "../scripts/get_assemblies.py"
-
-
-# rule dm_ncbi_aggregate_taxid_accessions:
-#     " aggregate accession from both sections and for all taxid in a file."
-#     output:
-#         os.path.join(RESDIR,"tmp","accession.taxid.txt"),
-#     input:
-#         expand(os.path.join(RESDIR,"tmp",'accession.taxid.{section}.txt'),
-#             section=config['section']),
-#     shell:
-#         "tail -q -n +2 {input} | cut -f 1  | sort | uniq >> {output}"
-
-
-# rule dm_ncbi_taxid_to_accession:
-#     '''
-#         get genome accession based on taxid using ncbi-genome-download utility  
-#     '''
-#     output:
-#         os.path.join(RESDIR,"tmp",'accession.taxid.{section}.txt'),
-#     input:
-#         os.path.join(RESDIR,"tmp","taxid.txt"),
-#     params:
-#         group = config['group'],
-#     conda:
-#         "../envs/ngd.yaml"
-#     shell:
-#         "ncbi-genome-download {params.group} -s {wildcards.section} -T {input} -n -P > {output} || touch {output}"
-
+        "../scripts/filter_accession_on_taxid.py
 
 
 rule dm_ncbi_expand_taxid:
@@ -141,16 +110,29 @@ rule dm_ncbi_get_children_taxid:
     script:
         "../scripts/taxid_children.py"   
 
+
 # DOWNLOAD NCBI REPORTS
+rule dm_expand_ncbi_reports:
+    output:
+        os.path.join(RESDIR,"tmp","reports",'accession-ncbi-genbank-refseq.tsv'),
+    input:
+        expand(
+            os.path.join(RESDIR,"tmp","reports",'{db}.report.tsv'),db=["genbank","refseq"]),
+    shell:
+        "cat {input} > {output}"
+
+URLS = {
+    "genbank":"https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_genbank.txt",
+    "refseq":"https://ftp.ncbi.nlm.nih.gov/genomes/ASSEMBLY_REPORTS/assembly_summary_refseq.txt"
+}
+
 rule dm_ncbi_get_reports:
     '''
         merge ncbi reports
     '''
     output:
-        os.path.join(RESDIR,"tmp","reports",'{}.report.tsv'.format(date.today().strftime('%Y-%m'))),
-    log:
-        os.path.join(RESDIR,"tmp","reports",'report.log'),  
-    conda:
-        "../envs/biopython_1.79.yaml"
-    script:
-        "../scripts/get_ncbi_reports.py"
+        temp(os.path.join(RESDIR,"tmp","reports",'{db}.report.tsv')),
+    params:
+        url = lambda wildcards: URLS[wildcards.db],    
+    shell:
+        'curl -s {params.url} | grep -v "^#" | cut -f 1,6 > {output}'

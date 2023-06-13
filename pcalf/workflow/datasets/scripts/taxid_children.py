@@ -45,7 +45,7 @@ def main():
 
     taxidFH.close()
     nameFH.close()
-    logging.info("Resolve TaxID children for %s finished " % str(taxid))
+    logging.info("End.")
 
     
 if __name__ == "__main__":

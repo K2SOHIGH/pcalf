@@ -81,7 +81,7 @@ rule dm_ncbi_filter_reports:
         report = os.path.join(RESDIR,'tmp',"reports",'accession-ncbi-genbank-refseq.tsv'),
         taxids  = os.path.join(RESDIR,"tmp","taxid.txt"),     
     script:
-        "../scripts/filter_accession_on_taxid.py
+        "../scripts/filter_accession_on_taxid.py"
 
 
 rule dm_ncbi_expand_taxid:

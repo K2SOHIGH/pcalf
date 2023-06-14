@@ -286,7 +286,7 @@ def main():
     if summary_datas:
         df = pd.DataFrame(summary_datas).set_index("sequence_accession")
     else:
-        df = pd.DataFrame(columns=["sequence_accession","sequence_src","flag","nter","nter_neighbor","cter","sequence","iteration"]).set_index("sequence_accession")
+        df = pd.DataFrame(columns=["sequence_accession","sequence_src","flag","nter","nter_neighbor","cter","sequence"]).set_index("sequence_accession")
     df.to_csv(res_dir + "/pcalf.summary.tsv",sep="\t",index=True,header=True)
 
 if __name__ == "__main__":

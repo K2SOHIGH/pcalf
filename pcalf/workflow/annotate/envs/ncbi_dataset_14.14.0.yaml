@@ -5,13 +5,9 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  - ncbi-datasets-cli
-  - tqdm
-  - numpy
-  - pandas
+  - python=3.9
+  - pip
   - pip:
-      - ncbi-datasets-pylib==14.22.1
-
-
+    - ncbi-datasets-pylib
 
 prefix: /Users/mmillet/miniconda3/envs/ncbi_datasets

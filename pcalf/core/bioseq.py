@@ -345,7 +345,7 @@ class Sequences(SequencesIO):
         assert isinstance(hmms,list)
         for hmm in hmms:            
             if not isinstance(hmm, pyhmmer.plan7.HMM):
-                raise TypeError("Except pyhmmer.plan7.HMM but received".format(type(hmm)))
+                raise TypeError("Except pyhmmer.plan7.HMM but received {}".format(type(hmm)))
 
         hits = pyhmmer.hmmsearch(hmms,self.digitize(alphabet),cpus=cpus,**kwargs)
         hmm_datas = [(h.name.decode("UTF-8"),h.M)  for h in hmms]
@@ -443,7 +443,7 @@ class Sequences(SequencesIO):
             pd.DataFrame
         """          
         features = []
-        for seq in self.sequences:
+        for seq in self.sequences:         
             for feature in seq.features:
                 keep=True
                 if feature_id:

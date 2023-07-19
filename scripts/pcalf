@@ -248,16 +248,18 @@ def main():
         for nterid, n in u_nter.items():
             nterout.write("{}\t{}\t{}\n".format(n[0],nterid,n[1]))
 
-    logger.info("Write feature table.")
+    logger.info("Writing feature table.")
     features = calseq.to_feature_table()
     features.to_csv(res_dir + "/pcalf.features.tsv",sep="\t",header=True,index=True)
-    logger.info("Write hits table")
+    logger.info("Writing hits table")
     hits = calseq.to_hits_table()
     hits.to_csv(res_dir + "/pcalf.hits.tsv",sep="\t",header=True,index=True)
 
-    logger.info("Make summary.")
+    logger.info("Making summary.")
     summary_datas = []
-    for sequence, seq_features_df in features.groupby("sequence_id"):
+    for idx, seq_features_df in features.groupby(["sequence_id","sequence_src"]):
+        sequence = idx[0]
+        sequence_src = idx[1]
         cterom = ",".join(
                         list(
                             seq_features_df[seq_features_df.feature_id.isin(["Gly1","Gly2","Gly3"]) ].sort_values("feature_start").feature_id
@@ -274,7 +276,7 @@ def main():
         summary_datas.append(
             {
                 "sequence_accession":sequence,
-                "sequence_src": "".join(set(seq_features_df.sequence_src.unique())),
+                "sequence_src": sequence_src,
                 "flag":search.decision_tree(nter_type,cterom),
                 "nter":nter_type,
                 "nter_neighbor": nter_neighbor,

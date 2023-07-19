@@ -57,4 +57,5 @@ class Snakemake:
         logger.info("Great , workflow finished without error :)" )       
         if "-n" in args or "--dryrun" in args or "--dry-run" in args:
             logger.warning("ps : it was a dryrun !")
+            exit(0)
         return snakex    

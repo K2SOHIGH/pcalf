@@ -83,7 +83,7 @@ rule ccya:
                 #genomes = fna_records = SeqIO.parse(genome_handle,format="fasta")
                 fna_records = SeqIO.to_dict(SeqIO.parse(cds_handle,format="fasta"))
                 ccya = fna_records[seqid]
-                region,start,stop,strand,partial,pseudo = parse_ncbi_header(ccya.description)
+                region,start,stop,strand,partial,pseudo,src = parse_ncbi_header(ccya.description)
                 if start is None:
                     region,start,stop,strand,partial,pseudo,src = parse_prodigal_header(ccya.description)
                 #"ccyA\tccyA_genomic_region\tccyA_start\tccyA_stop\tccyA_frame\tccyA_partial\tccyA_pseudo\tccyA_seq\n"

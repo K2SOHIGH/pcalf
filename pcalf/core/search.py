@@ -442,7 +442,7 @@ def pcalf(
             Z,
             domZ
         )
-    logging.info("Total number of sequences with at least one GlyX3 hit : {}".format(len(sequences.sequences)))    
+    logging.info("Total number of sequences with at least one GlyX3 hit: {}".format(len(sequences.sequences)))    
 
     logging.info("Start features creation.")
     sequences = hits_2_features(
@@ -496,6 +496,7 @@ def pcalf(
             
         gly3features = valid_calcyanin.get_feature("Gly3")        
         if gly3features:
+            print(gly3features)
             logging.info("Updating Gly3")
             gly3 = update_hmm(gly1features,gly3,is_update_iterative)
 

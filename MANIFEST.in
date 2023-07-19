@@ -1,3 +1,2 @@
 include README.md
-recursive-include src/ *
-recursive-include report/ *
+recursive-include pcalf/ *

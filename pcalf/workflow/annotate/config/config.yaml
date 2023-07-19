@@ -12,8 +12,7 @@ config-genomes:
       s: 5000,
       d: 0.1,
       v: 1.0,
-  batch_size: 5
-  genome_extension: "fna.gz"
+  batch_size: 1500
   low_memory: false
   merge_with: null
   taxonomy_wf:

@@ -34,6 +34,19 @@ class HmmIO:
             raise FileNotFoundError("{} doesn't exist".format(msafile))
 
 
+    def dump(self,filename):
+        msa = self._msa
+        with open(filename,'w') as fh:
+            if isinstance(msa ,pyhmmer.easel.DigitalMSA):
+                msa = msa.textize()
+            for s in msa.sequences:                
+                r = ">{}\n{}\n".format(s.name.decode(),s.sequence)
+                fh.write(r)
+
+
+            
+
+
 class Hmm(HmmIO):
     """Class to handle both a MSA and its corresponding HMM profile.
     
@@ -52,10 +65,15 @@ class Hmm(HmmIO):
         """
         self._msa = self.load_msa(msafile,msa_name) if msafile else None        
         self._hmm = self.hmmbuild(self.msa, **kwargs) if msafile else None
+        self._msa_file = msafile        
     
     @property
     def msa(self):
         return self._msa
+
+    @property
+    def msa_file(self):
+        return self._msa_file
 
     @property
     def hmm(self):
@@ -67,6 +85,10 @@ class Hmm(HmmIO):
             self._msa = value
         else:
             raise TypeError("value must be pyhmmer.easel.MSA")        
+
+    @msa_file.setter
+    def msa_file(self, value):        
+        self._msa_file = value
 
     @hmm.setter
     def hmm(self, value):        
@@ -168,7 +190,7 @@ class Hmm(HmmIO):
                     _ , kmer_B = self._count_kmers(accs[seq.name],k_size= k_size)
                     jaccard = self._jaccard_similarity(kmer_A,kmer_B)
                     logging.warning("""Duplicate identifier : {}\nHMM seqlength: {};\nNEW seqlength: {};\n Jaccard similarity: {} [kmer length: {}]""".format(
-                        seq.name,
+                        seq.name.decode(),
                         len(accs[seq.name]),
                         len(seq.textize().sequence),
                         jaccard,

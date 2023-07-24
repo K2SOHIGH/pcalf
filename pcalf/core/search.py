@@ -15,7 +15,146 @@ import tqdm
 from Bio.SeqFeature import SeqFeature, FeatureLocation
 
 from .biohmm import Hmm
-from .bioseq  import Sequences , Hit
+from .bioseq  import Sequences , Hit, Seq
+
+
+def glyzips_to_features(
+    seq,
+    glyzip_evalue_threshold:float=1e-5,
+    glyzip_coverage_threshold:float=0.7
+    ):
+    seq.per_residue_annotation() # for each residue we create an empty list
+    current = Hit()
+    glyzip_hits = []
+    glyzip_frag_len = []        
+    fraglen = 0
+    for _,hits in seq.res.items():   # return a tuple (pos,res)
+        # none, one or multiple hit exists for this residue, best hit is at the the top of the list.
+        if hits:
+            # keep only glyzip                
+            hits = [h for h in hits if h.hid in ["Gly1","Gly2","Gly3"]]
+            if hits:
+                # E-VALUE THRESHOLD   
+                if hits[0].score < glyzip_evalue_threshold:        
+                    #The hit is below the E-value threshold, we keep it.
+                    if current.hid == hits[0].hid: # The hit is the same as before, so we continue
+                        fraglen += 1
+                        continue    
+                    else: # The hit is different from before, therefore we store residues that share the same annotation as a new feature.
+                        # 
+                        if current.hid:                            
+                            glyzip_hits.append(current)
+                            glyzip_frag_len.append(fraglen)                    
+                        current = hits[0]           
+                        fraglen=0
+            else:
+                if current.hid:
+                    glyzip_hits.append(current)
+                    glyzip_frag_len.append(fraglen)
+                current = Hit()
+
+    # COVERAGE THRESHOLD
+    valid_glyzip_hit = [ f for f,fl in zip(glyzip_hits,glyzip_frag_len)  if  fl/f.target_len > glyzip_coverage_threshold ]        
+    # For each hit we create a feature 
+    for hit in valid_glyzip_hit:  
+        if hit.score:
+            f = SeqFeature(
+            FeatureLocation(
+                hit.start_location, 
+                hit.stop_location
+                ),
+            id=hit.hid,
+            type="domain", 
+            qualifiers={
+                "n_hits"  :1,
+                "score"   :  "{:.2e}".format(hit.score),
+                "src":"{}_HMM_Profile".format(hit.hid),
+                "src_len" : hit.target_len,
+                "coverage": hit.coverage,
+                "identity": hit.identity
+            })
+            seq.features.append( f )
+    return seq
+
+
+def glyx3_to_feature(
+    seq:Seq,
+    glyx3_evalue_threshold:float=1e-30,
+    glyx3_coverage_threshold:float=0.3,
+    ):
+    # We filter hits based on their e-value and the total coverage against the GlyX3 HMM profile.    
+    is_glyx3_feature_exist = False
+    hit_below_evalue_threshold = [ h for h in seq.hits if h.score < glyx3_evalue_threshold and h.hid =="Glyx3"]             
+    if hit_below_evalue_threshold:          
+        start_glyx3 = min([h.start_location for h in hit_below_evalue_threshold])
+        end_glyx3 = max([h.stop_location for h in hit_below_evalue_threshold])
+        scores = min([str("{:.2e}".format(h.score)) for h in hit_below_evalue_threshold])            
+        coverage_on_glyx3 = (end_glyx3-start_glyx3)/hit_below_evalue_threshold[0].target_len
+        identity = min([str(h.identity) for h in hit_below_evalue_threshold])
+        range = ",".join([str(h.start_location)+":"+str(h.stop_location) for h in hit_below_evalue_threshold])
+        # COVERAGE THESHOLD 
+        if coverage_on_glyx3 > glyx3_coverage_threshold:
+            f = SeqFeature(
+                FeatureLocation(
+                    start_glyx3, 
+                    end_glyx3
+                    ),
+                id="GlyX3",
+                type="domain", 
+                qualifiers={
+                    "n_hits":len(hit_below_evalue_threshold),
+                    "range":range,
+                    "score":scores,
+                    "src":"GlyX3_HMM_Profile",
+                    "src_len":hit_below_evalue_threshold[0].target_len,
+                    "coverage":coverage_on_glyx3,             
+                    "identity":identity
+                })
+            seq.features.append( f )   
+            is_glyx3_feature_exist = True 
+    return seq
+
+
+def nter_to_feature(
+    seq,
+    nter_evalue_threshold:float = 1e-07,
+    nter_coverage_threshold:float = 0.80,
+    ):
+    self_match = None
+    valid_match = []
+    nter_hits = [h for h in seq.hits if h.method=="blastp"]
+    if nter_hits:
+        for hit in nter_hits:
+            # E-value and coverage filtering.
+            if hit.score < nter_evalue_threshold and \
+                hit.coverage >= nter_coverage_threshold:
+
+                f = SeqFeature(
+                    FeatureLocation(
+                        hit.start_location, 
+                        hit.stop_location
+                        ),
+                    id="N-ter",
+                    type="domain", 
+                    qualifiers={
+                        "n_hits":len(seq.hits),
+                        "score":hit.score,
+                        "src":hit.hid,
+                        "src_len":hit.target_len,
+                        "coverage":hit.coverage,
+                        "identity":hit.identity
+                    })     
+                if hit.hid.split("||")[-1] == seq.id:
+                    self_match = f
+                else:
+                    valid_match.append(f)                                                        
+        if valid_match:
+            seq.features.append(valid_match[0]) # because we keep only the best hit - aka the nearest neighboor.
+        elif self_match:
+            seq.features.append(self_match) # because there is no nearest neighboor but a self match exist.
+        else:
+            pass # because there is not hit at all.
+    return seq
 
 def hits_2_features(sequences,
             glyx3_evalue_threshold:float=1e-30,
@@ -33,128 +172,28 @@ def hits_2_features(sequences,
         nter_coverage_threshold (float): Coverage threshold for blastp. 
         nter_evalue_threshold (float): E-value threshold for blastp.
     """
-    logging.info("Filtering GlyX3 hits.")
+    #logging.info("Filtering GlyX3 hits and convert to feature.")
     for seq in sequences.sequences:
-        # We filter hits based on their e-value and the total coverage against the GlyX3 HMM profile.
-        is_glyx3_feature_exist = False
-        hit_below_evalue_threshold = [ h for h in seq.hits if h.score < glyx3_evalue_threshold and h.hid =="Glyx3"]             
-        if hit_below_evalue_threshold:          
-            start_glyx3 = min([h.start_location for h in hit_below_evalue_threshold])
-            end_glyx3 = max([h.stop_location for h in hit_below_evalue_threshold])
-            scores = ";".join([str(h.score) for h in hit_below_evalue_threshold])            
-            coverage_on_glyx3 = (end_glyx3-start_glyx3)/hit_below_evalue_threshold[0].target_len
-            identity = ";".join([str(h.identity) for h in hit_below_evalue_threshold])
-            range = ",".join([str(h.start_location)+":"+str(h.stop_location) for h in hit_below_evalue_threshold])
-            # COVERAGE THESHOLD 
-            if coverage_on_glyx3 > glyx3_coverage_threshold:
-                f = SeqFeature(
-                    FeatureLocation(
-                        start_glyx3, 
-                        end_glyx3
-                        ),
-                    id="GlyX3",
-                    type="domain", 
-                    qualifiers={
-                        "n_hits":len(hit_below_evalue_threshold),
-                        "range":range,
-                        "score":scores,
-                        "src":"GlyX3_HMM_Profile",
-                        "src_len":hit_below_evalue_threshold[0].target_len,
-                        "coverage":coverage_on_glyx3,             
-                        "identity":identity
-                    })
-                seq.features.append( f )   
-                is_glyx3_feature_exist = True 
-        logging.debug("Filtering glyzip for {}.".format(seq.id))
+        glyx3_to_feature(
+            seq,
+            glyx3_evalue_threshold,
+            glyx3_coverage_threshold
+        )
+        #logging.debug("Filtering glyzip for {}.".format(seq.id))
         # Hit filtering and features creation.
         # init per_residue_annotation 
-        seq.per_residue_annotation() # for each residue we create an empty list
-        current = Hit()
-        glyzip_hits = []
-        glyzip_frag_len = []        
-        fraglen = 0
-        for _,hits in seq.res.items():   # return a tuple (pos,res)
-            # none, one or multiple hit exists for this residue, best hit is at the the top of the list.
-            if hits:
-                # keep only glyzip                
-                hits = [h for h in hits if h.hid in ["Gly1","Gly2","Gly3"]]
-                if hits:
-                    # E-VALUE THRESHOLD   
-                    if hits[0].score < glyzip_evalue_threshold:        
-                        #The hit is below the E-value threshold, we keep it.
-                        if current.hid == hits[0].hid: # The hit is the same as before, so we continue
-                            fraglen += 1
-                            continue    
-                        else: # The hit is different from before, therefore we store residues that share the same annotation as a new feature.
-                            # 
-                            if current.hid:                            
-                                glyzip_hits.append(current)
-                                glyzip_frag_len.append(fraglen)                    
-                            current = hits[0]           
-                            fraglen=0
-                else:
-                    if current.hid:
-                        glyzip_hits.append(current)
-                        glyzip_frag_len.append(fraglen)
-                    current = Hit()
+        glyzips_to_features(
+            seq,
+            glyzip_evalue_threshold,
+            glyzip_coverage_threshold
+        )
 
-        # COVERAGE THRESHOLD
-        valid_glyzip_hit = [ f for f,fl in zip(glyzip_hits,glyzip_frag_len)  if  fl/f.target_len > glyzip_coverage_threshold ]        
-        # For each hit we create a feature 
-        for hit in valid_glyzip_hit:            
-            if hit.score:
-                f = SeqFeature(
-                FeatureLocation(
-                    hit.start_location, 
-                    hit.stop_location
-                    ),
-                id=hit.hid,
-                type="domain", 
-                qualifiers={
-                    "n_hits":1,
-                    "score":hit.score,
-                    "src":"{}_HMM_Profile".format(hit.hid),
-                    "src_len":hit.target_len,
-                    "coverage":hit.coverage,
-                    "identity":hit.identity
-                })
-            seq.features.append( f )
-
-        logging.debug("Resolve N-ter nearest neighboor for {}.".format(seq.id))        
-        self_match = None
-        valid_match = []
-        nter_hits = [h for h in seq.hits if h.method=="blastp"]
-        if nter_hits:
-            for hit in nter_hits:
-                # E-value and coverage filtering.
-                if hit.score < nter_evalue_threshold and \
-                    hit.coverage >= nter_coverage_threshold:
-
-                    f = SeqFeature(
-                        FeatureLocation(
-                            hit.start_location, 
-                            hit.stop_location
-                            ),
-                        id="N-ter",
-                        type="domain", 
-                        qualifiers={
-                            "n_hits":len(seq.hits),
-                            "score":hit.score,
-                            "src":hit.hid,
-                            "src_len":hit.target_len,
-                            "coverage":hit.coverage,
-                            "identity":hit.identity
-                        })     
-                    if hit.hid.split("||")[-1] == seq.id:
-                        self_match = f
-                    else:
-                        valid_match.append(f)                                                        
-            if valid_match:
-                seq.features.append(valid_match[0]) # because we keep only the best hit - aka the nearest neighboor.
-            elif self_match:
-                seq.features.append(self_match) # because there is no nearest neighboor but a self match exist.
-            else:
-                pass # because there is not hit at all.
+        #logging.debug("Resolve N-ter nearest neighboor for {}.".format(seq.id))        
+        nter_to_feature(
+            seq,
+            nter_evalue_threshold,
+            nter_coverage_threshold
+        )
     return sequences
 
 def search_calcyanin(fasta:str, 
@@ -163,7 +202,7 @@ def search_calcyanin(fasta:str,
             gly1_hmm:pyhmmer.plan7.HMM, 
             gly2_hmm:pyhmmer.plan7.HMM, 
             gly3_hmm:pyhmmer.plan7.HMM,
-            nter_fa:str, 
+            nter_fa:str='', 
             Z:int=10000,
             domZ:int=10000,
             ):
@@ -202,16 +241,11 @@ def search_calcyanin(fasta:str,
     del sequences 
     sequences_out_glyx3_search.sequences = [s for s in sequences_out_glyx3_search.sequences if s.hits]
 
-    #glyx3_sequences.to_hits_table().to_csv(os.path.join(tmp_dir,"glyx3.hits.tsv"),sep="\t",header=True,index=True)    
-
     # keep only sequence with a hit against the glyx3 profile that respect coverage and E-value thresholds.
     logging.debug("[GlyX3] number of sequence with a hit against GlyX3  : {}".format(len(sequences_out_glyx3_search.sequences)))
-    # glyx3_sequences.sequences = [s for s in glyx3_sequences.sequences if s.hits] 
-    # logging.debug("[GlyX3] number of sequence with a GlyX3 feature after filtering: {}".format(len(glyx3_sequences.sequences)))
-    
+
     # We can then use those sequences for the next steps 
     # i.e, Glycine zipper annotation and N-ter comparison.
-    
     # 2) Search GlyZip profiles
     logging.debug("2) Search {} sequences against Glyzip HMM profiles".format(len(sequences_out_glyx3_search.sequences)))
     glzips_easel_hmm = [gly1_hmm,gly2_hmm,gly3_hmm]
@@ -222,8 +256,11 @@ def search_calcyanin(fasta:str,
     sequences_out_glyx3_search.hmmsearch(glzips_easel_hmm, Z=Z ,domZ=domZ)
 
     # 3) Compare sequence with known N-ter.
-    logging.debug("3) blast {} sequences against known N-ters".format(len(sequences_out_glyx3_search.sequences)))
-    sequences_out_glyx3_search.blastp(nter_fa)
+    if nter_fa:
+        logging.debug("3) blast {} sequences against known N-ters".format(len(sequences_out_glyx3_search.sequences)))
+        sequences_out_glyx3_search.blastp(nter_fa)
+    else:
+        logging.debug("3) Skip n-ter detection as no fasta file is provided.")
     return sequences_out_glyx3_search
 
 def _search_calcyanin_mt(args):    
@@ -378,6 +415,48 @@ def parse_nterdb(nterdb):
             
     return nter_dict
 
+
+def get_coverage_and_evalue_threshold(features_table,feature_src):
+    max_e_value = 0
+    min_coverage = 1
+    for _,row in features_table[features_table.feature_src.isin(feature_src)].iterrows():
+        e_value = max([float(i) for i in str(row['e-value']).split(';')])
+        coverage  = min([float(i) for i in str(row['coverage']).split(';')])
+        if coverage < min_coverage:
+            min_coverage=coverage
+        if e_value > max_e_value:
+            max_e_value = e_value    
+    return float("{}e{}".format(1, "{:3e}".format(max_e_value*10).split('e')[1] )), round(min_coverage,1)
+
+def auto_thresholds(reference,glyx3,gly1,gly2,gly3,Z,domZ):    
+    sequences = search_calcyanin(
+        reference,
+        '-',     
+        glyx3.hmm,
+        gly1.hmm,
+        gly2.hmm,
+        gly3.hmm,
+        Z=Z,
+        domZ=domZ,    
+    )
+    hits_2_features(
+        sequences,
+        glyx3_evalue_threshold=1,
+        glyx3_coverage_threshold=0,
+        glyzip_evalue_threshold=1,
+        glyzip_coverage_threshold=0,
+        nter_coverage_threshold = 0, 
+        nter_evalue_threshold = 1
+    )
+    features_table = sequences.to_feature_table()
+    glyx3_evalue_threshold, glyx3_coverage_threshold = get_coverage_and_evalue_threshold(
+        features_table,['GlyX3_HMM_Profile'])
+    glyzip_evalue_threshold, glyzip_coverage_threshold = get_coverage_and_evalue_threshold(
+        features_table,['Gly1_HMM_Profile','Gly2_HMM_Profile','Gly3_HMM_Profile'])
+
+    return (glyx3_evalue_threshold, glyx3_coverage_threshold, glyzip_evalue_threshold, glyzip_coverage_threshold)
+
+
 def pcalf(        
         fastas:list, 
         srcs:list,
@@ -388,30 +467,32 @@ def pcalf(
         nterdb:str, 
         Z:int=10000,
         domZ:int=10000,
-        glyx3_evalue_threshold:float=1e-30,  
-        glyx3_coverage_threshold:float=0.60,  
-        glyzip_evalue_threshold:float=1e-5,
-        glyzip_coverage_threshold:float=0.7,
+        glyx3_evalue_threshold:float=None,  
+        glyx3_coverage_threshold:float=None,  
+        glyzip_evalue_threshold:float=None,
+        glyzip_coverage_threshold:float=None,
         nter_coverage_threshold:float = 0.80, 
-        nter_evalue_threshold:float = 1e-07,
-        is_update_iterative:bool=False): 
+        nter_evalue_threshold:float = 1e-4,
+        is_update_iterative:bool=False,
+        **kwargs
+        ): 
     """Search for calcyanin within one or more fasta files using several HMM profiles and 'database' of known N-ter.
-
-    If is_iterative is set , then HMMs profiles and N-ter database is updated at each iteration with new calcyanin if any.
+    
     it's first search for calcyanin based on the Glycine zipper repeat (aka Glyx3). Then each glycine zipper is searched using 
     a specific HMM profile. Finally, sequences with a Glyx3 are searched against a database of known N-ter using blastp. 
     
     Args:
         fastas (list): list of fasta file - required.
         srcs (list): list of flag that will be attached to calcyanin. Useful when searching across multiple files. 
-        glyx3_hmm (pyhmmer.plan7.HMM):  Glyx3 HMM profile - required
-        gly1_hmm (pyhmmer.plan7.HMM): Gly1 HMM profile - required
-        gly2_hmm (pyhmmer.plan7.HMM): Gly2 HMM profile - required
-        gly3_hmm (pyhmmer.plan7.HMM): Gly3 HMM profile - required
-        nter_fa (str): Path to fasta file containing known N-ter sequences - required
+        glyx3 (BioHMM.Hmm): Glyx3 HMM profile - required
+        gly1  (BioHMM.Hmm): Gly1 HMM profile - required
+        gly2  (BioHMM.Hmm): Gly2 HMM profile - required
+        gly3  (BioHMM.Hmm): Gly3 HMM profile - required
+        nterdb (str): Path to fasta file containing known N-ter sequences - required
         glyx3_evalue_threshold (float): E-value threshold for glyx3 
         glyx3_coverage_threshold (float): Coverage theshold for glyx3
         glyzip_evalue_threshold (float): E-value theshold for glycine zipper        
+        glyzip_coverage_threshold (float): Coverage theshold for glycine zipper        
         max_iteration (int): Number of iteration 
         is_update_iterative (bool): Update hmm sequence by sequence.
     Raises:
@@ -420,11 +501,46 @@ def pcalf(
         A tuple containing calcyanins as Sequences object, Glyx3, Gly1, Gly2 and Gly3 as Hmm objects.
     """
 
+    logging.info('Get E-value and coverage thresholds based on input HMM profiles.')
+    reference_file = tempfile.NamedTemporaryFile(mode="w")    
+    glyx3.dump(reference_file.name)    
+    reference_file.flush()
+    auto_glyx3_e_value,auto_glyx3_cov,auto_glyzip_e_value,auto_glyzip_cov =  auto_thresholds(
+        reference_file.name,
+        glyx3,
+        gly1,
+        gly2,
+        gly3,
+        Z,
+        domZ
+    )
+
+    glyx3_evalue_threshold    = glyx3_evalue_threshold    if glyx3_evalue_threshold    else auto_glyx3_e_value  
+    glyx3_coverage_threshold  = glyx3_coverage_threshold  if glyx3_coverage_threshold  else auto_glyx3_cov
+    glyzip_evalue_threshold   = glyzip_evalue_threshold   if glyzip_evalue_threshold   else auto_glyzip_e_value  
+    glyzip_coverage_threshold = glyzip_coverage_threshold if glyzip_coverage_threshold else auto_glyzip_cov
+
+    logging.info("""\nConfiguration:
+    GlyX3 E-value threshold: {} [auto: {}]
+    GlyX3 coverage threshold: {} [auto: {}]
+    GlyZip E-value threshold: {} [auto: {}]
+    GlyZip coverage threshold: {} [auto: {}]
+    blast E-value threshold for N-ter extremity: {}
+    blast coverage threshold for N-ter extremity: {}
+    """.format(
+        glyx3_evalue_threshold, auto_glyx3_e_value,
+        glyx3_coverage_threshold, auto_glyx3_cov,
+        glyzip_evalue_threshold,  auto_glyzip_e_value,
+        glyzip_coverage_threshold, auto_glyzip_cov,
+        nter_evalue_threshold, nter_coverage_threshold
+    ))
+
+    for profile in [glyx3,gly1,gly2,gly3]:
+        logging.info('{}:  Number of sequences = {}.'.format(
+            profile.hmm.name.decode(),profile.hmm.nseq))
     
-    not_converged = True
-    # logging.info("Max Iteration : {}".format(max_iteration))
-    logging.info("Number of sequences in the N-ter database at start : {}".format(len(nterdb)))
     logging.info("Dump Nter DB as fasta.")
+    logging.debug("Number of sequences in the N-ter database at start : {}".format(len(nterdb)))
     nterfa = tempfile.NamedTemporaryFile(mode="w+")
     for sid, nter in nterdb.items():
         nterfa.write(">{}||{}\n{}\n".format(nter[0],sid,nter[1]))
@@ -496,7 +612,6 @@ def pcalf(
             
         gly3features = valid_calcyanin.get_feature("Gly3")        
         if gly3features:
-            print(gly3features)
             logging.info("Updating Gly3")
             gly3 = update_hmm(gly1features,gly3,is_update_iterative)
 
@@ -518,6 +633,33 @@ def pcalf(
             logging.info("Number of sequences in the N-ter database after update : {}".format(len(nterdb)))                    
     return sequences, glyx3 , gly1, gly2, gly3 , nterdb 
           
+
+
+def iterative_pcalf(*args,**kwargs):
+    ite = 0
+    max_ite = kwargs.get('max_iteration')
+    logging.info('Iterative search enable [max-iteration: {}]'.format(max_ite))
+    sequences = []
+    keep_going = True
+    fastas,names,glyx3,gly1,gly2,gly3,nterdb = args
+    while keep_going:
+        keep_going = False
+        # do 
+        new_sequences, glyx3 , gly1, gly2, gly3 , nterdb  = pcalf(
+            fastas,names,glyx3,gly1,gly2,gly3,nterdb,**kwargs)
+        for seq in new_sequences.sequences:
+            if seq.id not in sequences:
+                keep_going = True
+                sequences.append(seq.id)
+    ite+=1
+    logging.info('{}/{} iterations done.'.format(ite,max_ite))
+    if ite==max_ite:
+        keep_going = False
+    logging.info('Converged in {} iterations [max-iteration: {}]'.format(ite,max_ite))
+    return new_sequences, glyx3 , gly1, gly2, gly3 , nterdb
+
+
+
 def decision_tree(nter , cter):
     """give a flag to a calcyanin based on its C-ter modular organization and its N-ter."""
     if re.search("Gly1,Gly2,Gly3",cter):

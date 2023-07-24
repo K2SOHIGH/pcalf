@@ -34,6 +34,12 @@ def get_args():
     parser.add_argument('-o', dest='res_dir', type=str, required=True,
                         help='Output directory. pcalf will ouput several files including updated HMMs and MSAs, a feature table and a summary.')   
 
+    parser.add_argument('--iterative-search', action="store_true",
+                        help="If set, searches will be done with updated profiles until convergence or --max-iteration is reached . ")
+
+    parser.add_argument('--max-iteration', default=4,
+                        help="Max iteration to be done if iterative-search enable. (default: %(default)s) ")                        
+
     parser.add_argument('--iterative-update', action="store_true",
                         help="If set, HMM profiles will be updated by aligning one sequence by one sequence. ")
 
@@ -41,23 +47,23 @@ def get_args():
                         default = DATASDIR + "/GlyX3.msa.fa", 
                         help='Path to GlyX3 msa (default: %(default)s). A weighted HMM will be built from it.')                                     
 
-    parser.add_argument('-Z', dest='Z', type=int, default=None,
+    parser.add_argument('-Z', dest='Z', type=int, default=10000,
                         help='The effective number of comparisons done, for E-value calculation.\
                             Leave as None to auto-detect by counting the number of sequences queried.\
                             (default: %(default)s).') 
 
-    parser.add_argument('--domZ', dest='domZ', type=int, default=None,
+    parser.add_argument('--domZ', dest='domZ', type=int, default=10000,
                         help='The number of significant sequences found, for domain E-value calculation.\
                             Leave as None to auto-detect by counting the number of sequences reported. \
                             (default: %(default)s).')     
 
     parser.add_argument('--glyx3-coverage', dest='glyx3_coverage_threshold', 
-                        type=float,default=0.6,
-                        help="Minimal coverage (default: %(default)s)." )
+                        type=float,default=None,
+                        help="Minimal coverage (default: auto)." )
     
     parser.add_argument('--glyx3-evalue', dest='glyx3_evalue_threshold', 
-                        type=float,default=1e-20,
-                        help="Glyx3 E-value when considering Glyx3 Hits (default: %(default)s).")
+                        type=float,default=None,
+                        help="Glyx3 E-value when considering Glyx3 Hits (default: auto).")
                         
     parser.add_argument('--gly1-msa', dest = 'gly1_msa', 
                         default = DATASDIR + "/Gly1.msa.fa", 
@@ -72,11 +78,12 @@ def get_args():
                         help='path to GlyZip3 msa (default: %(default)s). A weighted HMM will be built from it.')                        
 
     parser.add_argument('--glyzip-E-value', dest='glyzip_e_evalue', 
-                        type=float,default=1e-10,
-                        help = "Glyzip E-evalue when considering Gly(1|2|3) Hits (default: %(default)s)." )
+                        type=float,default=None,
+                        help = "Glyzip E-evalue when considering Gly(1|2|3) Hits (default: auto)." )
+    
     parser.add_argument('--glyzip-coverage', dest='glyzip_coverage', 
-                        type=float,default=0.7,
-                        help = "Glyzip coverage threshold when considering Gly(1|2|3) Hits (default: %(default)s)." )
+                        type=float,default=None,
+                        help = "Glyzip coverage threshold when considering Gly(1|2|3) Hits (default: None)." )
     
     parser.add_argument('--nterdb', dest='nterdb', 
                         default = DATASDIR + "/nterdb.ref.tsv", 
@@ -195,9 +202,13 @@ def main():
     _gly2_nseq = gly2.hmm.nseq
     _gly3_nseq = gly3.hmm.nseq
 
+    if args.iterative_search:
+        pcalf_func = search.iterative_pcalf
+    else:
+        pcalf_func = search.pcalf
+
     logger.info("Start search.")
-    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 , u_nter = search.pcalf(
-        #res_dir,
+    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 , u_nter = pcalf_func(
         fastas,
         names,
         glyx3,
@@ -213,7 +224,8 @@ def main():
         glyzip_coverage_threshold = args.glyzip_coverage,
         nter_coverage_threshold = args.nter_coverage, 
         nter_evalue_threshold  =  args.nter_evalue,
-        is_update_iterative=args.iterative_update,
+        is_update_iterative=args.iterative_update,        
+        max_iteration=args.max_iteration
     )
    
     logger.info("The search is over.")

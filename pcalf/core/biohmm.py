@@ -154,7 +154,7 @@ class Hmm(HmmIO):
     def hmmalign(self,sequences:list,
                  self_include=True,
                  iterative = False,
-                 trim=True,
+                 trim=False,
                  alphabet=pyhmmer.easel.Alphabet.amino()):
         """Align sequences to the hmm 
 
@@ -189,7 +189,8 @@ class Hmm(HmmIO):
                     _ , kmer_A = self._count_kmers(seq.textize().sequence,k_size= k_size)
                     _ , kmer_B = self._count_kmers(accs[seq.name],k_size= k_size)
                     jaccard = self._jaccard_similarity(kmer_A,kmer_B)
-                    logging.warning("""Duplicate identifier : {}\nHMM seqlength: {};\nNEW seqlength: {};\n Jaccard similarity: {} [kmer length: {}]""".format(
+                    logging.warning('{} already in HMM. Skip.'.format(seq.name.decode()))
+                    logging.debug("""Duplicate identifier : {}\nHMM seqlength: {};\nNEW seqlength: {};\n Jaccard similarity: {} [kmer length: {}]""".format(
                         seq.name.decode(),
                         len(accs[seq.name]),
                         len(seq.textize().sequence),

@@ -432,7 +432,6 @@ def parse_nterdb(nterdb):
             
     return nter_dict
 
-
 def get_coverage_and_evalue_threshold(features_table,feature_src):
     max_e_value = 0
     min_coverage = 1

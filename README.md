@@ -4,11 +4,8 @@
 PCALF stand for Python CALcyanin Finder.
 
 
-<br><br>
 
-<img src="./bacIcon.svg" alt="bacIcon" width="150" style="float:left;margin-right:20px"/>
 
- 
 
 Benzerara, K., Duprat, E., Bitard-Feildel, T., Caumes, G., Cassier-Chauvat, C., Chauvat, F., ... & Callebaut, I. (2022). [A new gene family diagnostic for intracellular biomineralization of amorphous Ca carbonates by cyanobacteria](https://doi.org/10.1093/gbe/evac026). Genome Biology and Evolution, 14(3), evac026. 
 
@@ -85,14 +82,16 @@ Pcalf is composed of several commands :
 
 ### pcalf : 
 
-This command can be used to look quickly for the presence of calcyanin in a set of amino acid sequences. It take one or more fasta files as input and output several files including a summary, a list of features and a list of raw hits produced during the search. It also produce updated HMMs and updateds MSAs with newly detected calcyanin tagged as Calcyanin with known N-ter. 
+This command can be used to look quickly for the presence of calcyanin in a set of amino acid sequences. It take one or more fasta files as input and output several files including a summary, a list of features and a list of raw hits produced during the search. It also produce updated HMMs and updated MSAs with newly detected calcyanin tagged as Calcyanin with known N-ter. 
 
 ```
 pcalf -i proteins.fasta 
       -o pcalf_results 
+      --iterative-search
       --iterative-update 
       --gly1-msa custom_gly1_msa.fasta
 ```
+--iterative-search : If True, the search will be performed with profiles produced by the previous iteration until there is no new sequence detected or if --max-iteration is reached.
 
 --iterative-update : True calcyanins (if any) will be added to the HMMs profiles iteratively starting with the best sequence (based on feature' score).
 

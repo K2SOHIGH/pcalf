@@ -163,7 +163,8 @@ def main():
     configfile = os.path.join(outdir, "config.yaml")
     annotate_module.dump_config(configfile)
     snakargs = args.snakargs.split()
-    snakargs.extend(["--configfile" , configfile])
+    if '--configfile' not in snakargs:
+        snakargs.extend(["--configfile" , configfile])
     
     annotate_module.run(snakargs)    
 

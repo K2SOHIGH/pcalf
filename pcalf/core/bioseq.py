@@ -70,10 +70,12 @@ class SequencesIO:
         #'ACDEFGHIKLMNPQRSTVWY-BJZOUX*~'
         for record in SeqIO.parse(fhl,format="fasta"):            
             if len(record.seq) < 10000:
-                suffix = 1
-                while record.id in ids:
-                    record.id = record.id + "_{}".format(suffix)
-                    suffix+=1
+                #suffix = 1
+                if record.id in ids:
+                    #record.id = record.id + "_pcalf{}".format(suffix)
+                    logging.warning('Duplicate sequence identifier for {}. this one will be ignored...'.format(record.id))
+                    continue
+                    #suffix+=1
                 ids.append(record.id)            
                 record.seq = record.seq.strip()
                 sequences.append(Seq(record,src=src))

@@ -26,7 +26,12 @@ config-ccya:
   gly2_msa: null
   gly3_msa: null
   nterdb: null
-  glyx3-evalue: 1e-20
-  glyx3-coverage: 0.6
-  Z: 10000 #for glyx3 hmmsearch only
-  domZ: null
+  glyx3-evalue: null
+  glyx3-coverage: null
+  glyzip-evalue: null
+  glyzip-coverage: null
+  iterative-search: True
+  iterative-update: True
+  max-iteration: 3
+  Z: 10000 
+  domZ: 10000

@@ -97,6 +97,11 @@ pcalf -i proteins.fasta
 
 --gly1-msa : Use another MSA instead of the default one. A HMM profile will be built from the given MSA and Glycine weight will be increased.
 
+
+#### Thresholds:
+By default, coverage and E-value threshold are infered from the HMM profiles that will be used for the search. To define the thresholds, a MSA is converted into a simple fasta file by deleting all gaps and aligned against its own HMM profile. A soft filtering is made using a coverage threshold of 0.5. The maximum E-values ​​and the minimum coverage values ​​are used to define the thresholds as follows : `max(E-value)*10, min(coverage)-0.1`
+
+
 ---
 
 ### pcalf-datasets-workflow : 

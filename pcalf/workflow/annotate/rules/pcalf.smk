@@ -79,15 +79,16 @@ rule ccya:
             for seqid, row in df.iterrows():
                 gid = row.sequence_src
                 cds_file = str(files[gid])
-                cds_handle = gzip.open(cds_file,"rt")  if cds_file.endswith('.gz') else open(cds_file, "r" )
-                #genomes = fna_records = SeqIO.parse(genome_handle,format="fasta")
+                cds_handle = gzip.open(cds_file,"rt")  if cds_file.endswith('.gz') else open(cds_file, "r" )                
                 fna_records = SeqIO.to_dict(SeqIO.parse(cds_handle,format="fasta"))
                 ccya = fna_records[seqid]
+                
                 region,start,stop,strand,partial,pseudo,src = parse_ncbi_header(ccya.description)
+                
                 if start is None:
                     region,start,stop,strand,partial,pseudo,src = parse_prodigal_header(ccya.description)
                 #"ccyA\tccyA_genomic_region\tccyA_start\tccyA_stop\tccyA_frame\tccyA_partial\tccyA_pseudo\tccyA_seq\n"
-                streamout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(
+                streamout.write("{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(
                     ccya.id,
                     region,
                     start,
@@ -96,9 +97,10 @@ rule ccya:
                     partial,
                     pseudo,
                     src,
-                    str(ccya.seq)                        
+                    str(ccya.seq)
                     )
                 )
+            
 
 rule pm_aggregate_reformat:
     output:
@@ -172,8 +174,13 @@ rule pm_pcalf:
         gly2   = "--gly2-msa {}".format(config["config-ccya"]["gly2_msa"]) if config["config-ccya"]["gly2_msa"] else "",
         gly3   = "--gly3-msa {}".format(config["config-ccya"]["gly3_msa"]) if config["config-ccya"]["gly3_msa"] else "",
         nter   = "--nterdb {}".format(config["config-ccya"]["nterdb"]) if config["config-ccya"]["nterdb"] else "",
-        evalue = config["config-ccya"]["glyx3-evalue"],
-        coverage = config["config-ccya"]["glyx3-coverage"],
+        evalue = "--glyx3-evalue {}".format(config["config-ccya"]["glyx3-evalue"]) if config["config-ccya"]["glyx3-evalue"] else "",
+        coverage = "--glyx3-coverage {}".format(config["config-ccya"]["glyx3-coverage"]) if config["config-ccya"]["glyx3-coverage"] else "",
+        glyzip_evalue = "--glyzip-evalue {}".format(config["config-ccya"]["glyzip-evalue"]) if config["config-ccya"]["glyzip-evalue"] else "",
+        glyzip_coverage = "--glyzip-coverage {}".format(config["config-ccya"]["glyzip-coverage"]) if config["config-ccya"]["glyzip-coverage"] else "",
+        maxite = config["config-ccya"]['max-iteration'],
+        iterative_search = '--iterative-search' if config["config-ccya"]['iterative-search'] else '',
+        iterative_update = '--iterative-search' if config["config-ccya"]['iterative-update'] else '',
         Z = "-Z {}".format(config["config-ccya"]["Z"]) if config["config-ccya"]["Z"] else "",
         domZ = "--domZ {}".format(config["config-ccya"]["domZ"]) if config["config-ccya"]["domZ"] else "",
     log:
@@ -185,18 +192,24 @@ rule pm_pcalf:
     threads:
         10
     shell:
-        "pcalf -i {input} -o {params.outdir} --force --thread {threads} "
+        "pcalf -i {input} "
+        "-o {params.outdir} "
+        "--force --thread {threads} "
         "{params.glyx3} "
         "{params.gly1} "
         "{params.gly2} "
         "{params.gly3} "
         "{params.nter} "
         "--log {log} "
-        "--glyx3-evalue {params.evalue} --glyx3-coverage {params.coverage} "
+        "{params.evalue} "
+        "{params.coverage} "
+        "{params.glyzip_evalue} "
+        "{params.glyzip_coverage} "
+        "{params.iterative_search} "
+        "{params.iterative_update} "
+        "--max-iteration {params.maxite} "
         "{params.Z} "
         "{params.domZ} " 
-        #"--max-iteration 2 --iterative-update"
-    
     
 def get_cds(wildcards):
     cds = []

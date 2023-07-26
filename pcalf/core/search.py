@@ -47,7 +47,8 @@ def glyzips_to_features(seq,
                         # The hit is different from before, 
                         # therefore we store residues that share the 
                         # same annotation as a new feature.
-                        if current:                                                         
+                        if current:           
+                            fraglen+=1                                              
                             glyzip_hits.append(current)
                             glyzip_frag_len.append(fraglen)                    
                         # feature have changed.
@@ -56,17 +57,20 @@ def glyzips_to_features(seq,
             # this residue do not have any hit. 
             else:
                 if current:
+                    fraglen+=1
                     glyzip_hits.append(current)
                     glyzip_frag_len.append(fraglen)
                 current = None
     # finally we add the final feature.
     if current:
+        fraglen+=1                                              
         glyzip_hits.append(current)
         glyzip_frag_len.append(fraglen)
     
 
     # COVERAGE THRESHOLD
     valid_glyzip_hit = [ f for f,fl in zip(glyzip_hits,glyzip_frag_len)  if  fl/f.target_len >= glyzip_coverage_threshold ]        
+
 
     # For each hit we create a feature 
     for hit in valid_glyzip_hit:  
@@ -253,9 +257,7 @@ def search_calcyanin(fasta:str,
     ))
     # We will only keep sequence with a glyX3 hit, thus we can free some memory.
     del sequences 
-    sequences_out_glyx3_search.sequences = [s for s in sequences_out_glyx3_search.sequences if s.hits]
-
-    # keep only sequence with a hit against the glyx3 profile that respect coverage and E-value thresholds.
+    sequences_out_glyx3_search.sequences = [s for s in sequences_out_glyx3_search.sequences if s.hits]    
     logging.debug("[GlyX3] number of sequence with a hit against GlyX3  : {}".format(len(sequences_out_glyx3_search.sequences)))
 
     # We can then use those sequences for the next steps 
@@ -441,11 +443,7 @@ def get_coverage_and_evalue_threshold(features_table,feature_src):
             min_coverage=coverage
         if e_value > max_e_value:
             max_e_value = e_value   
-    # if 'Gly1_HMM_Profile' in feature_src:
-    #     print("{:e}".format(max_e_value))
-    #     print(float("{}e{}".format(1, "{:3e}".format(max_e_value*2).split('e')[1] )))
-    #     print("{:e}".format(max_e_value*2))
-    return float("{}e{}".format(1, "{:3e}".format(max_e_value*2).split('e')[1] )), round(min_coverage,1)
+    return float('{:3e}'.format(max_e_value*10)),round(min_coverage-0.1,1)
 
 def auto_thresholds(reference,glyx3,gly1,gly2,gly3,Z,domZ):    
     sequences = search_calcyanin(
@@ -460,10 +458,10 @@ def auto_thresholds(reference,glyx3,gly1,gly2,gly3,Z,domZ):
     )    
     hits_2_features(
         sequences,
-        glyx3_evalue_threshold=1,
-        glyx3_coverage_threshold=0,
-        glyzip_evalue_threshold=1,
-        glyzip_coverage_threshold=0,
+        glyx3_evalue_threshold=1e-3,
+        glyx3_coverage_threshold=0.5,
+        glyzip_evalue_threshold=1e-3,
+        glyzip_coverage_threshold=0.5,
         nter_coverage_threshold = 0, 
         nter_evalue_threshold = 1
     )
@@ -589,29 +587,30 @@ def pcalf(
         nter_coverage_threshold, 
         nter_evalue_threshold) 
     
+
    
     new_calc = 0
     new_seq = 0
     valid_calcyanin = Sequences() 
     if sequences.sequences:            
         for seq in sequences.sequences:        
-            new_seq += 1             
-            nter = ",".join([f.features[0].qualifiers["src"].split("|")[0] for f in  seq.get_feature("N-ter")])
-            cter = ",".join([f.features[0].id for f in seq.get_feature("Gly1" )+
-                                seq.get_feature("Gly2" )+
-                                seq.get_feature("Gly3" )])
-            flag = decision_tree(nter,cter)
-
-            if flag == "Calcyanin with known N-ter" or flag == "Calcyanin with new N-ter":
-                new_calc += 1 
-                valid_calcyanin.sequences.append(seq)
+            if seq.get_feature("GlyX3" ):
+                new_seq += 1           
+                nter = ",".join([f.features[0].qualifiers["src"].split("|")[0] for f in  seq.get_feature("N-ter")])
+                cter = ",".join([f.features[0].id for f in seq.get_feature("Gly1" )+
+                                    seq.get_feature("Gly2" )+
+                                    seq.get_feature("Gly3" )])
+                flag = decision_tree(nter,cter)
+                if flag == "Calcyanin with known N-ter" or flag == "Calcyanin with new N-ter":
+                    new_calc += 1 
+                    valid_calcyanin.sequences.append(seq)
             
 
         logging.info("New sequences with a match against GlyX3 [+{}]".format(new_seq))                    
         logging.info("New calcyanin [+{}] ! :)".format(new_calc))                            
         
         logging.info("Updating HMM profiles and N-ter DB.")
-            # logging.info("[iteration {}] | New calcyanin found [+{}] ! :)".format(ite , new_calc))                    
+        
         glyx3features = valid_calcyanin.get_feature("GlyX3")
         if glyx3features:  
             logging.info("Updating GlyX3")
@@ -646,7 +645,7 @@ def pcalf(
                         {nf.id:( ntype , str(nf.seq) )}
                     )
                 else:
-                    logging.warning("Already in DB ... {} has 100% identity with {} which is already in the N-ter DB.".format(                            
+                    logging.debug("Already in DB ... {} has 100% identity with {} which is already in the N-ter DB.".format(                            
                         nf.id,
                         src,
                     ))                     

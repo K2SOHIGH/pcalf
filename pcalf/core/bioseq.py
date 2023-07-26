@@ -66,9 +66,15 @@ class SequencesIO:
         assert isinstance(fhl,io.TextIOWrapper)
 
         sequences = []
+        ids = []
         #'ACDEFGHIKLMNPQRSTVWY-BJZOUX*~'
-        for record in SeqIO.parse(fhl,format="fasta"):
+        for record in SeqIO.parse(fhl,format="fasta"):            
             if len(record.seq) < 10000:
+                suffix = 1
+                while record.id in ids:
+                    record.id = record.id + "_{}".format(suffix)
+                    suffix+=1
+                ids.append(record.id)            
                 record.seq = record.seq.strip()
                 sequences.append(Seq(record,src=src))
             else:                
@@ -201,7 +207,7 @@ class Seq(SeqRecord):
                 keep = feature_id == f.id
             if keep:
                 fseq.append(
-                    Seq(SeqRecord(seq=f.extract(self.seq),id=self.id, description="", features = [f] )    )
+                    Seq(SeqRecord(seq=f.extract(self.seq),id=self.id, description="",name=f.id, features = [f] )    )
                 )
         return fseq
         
@@ -409,7 +415,6 @@ class Sequences(SequencesIO):
 
         o = subprocess.run(" ".join(command) , capture_output=True , shell=True)         
         res = o.stdout.decode('ascii').strip()
-        sequences = Sequences() # create a new sequence object that will store sequences with at least one hit
         if res:
             df = pd.read_table( StringIO(res)  , sep=","  , header=None )          
             df.columns = "qacc sacc pident length mismatch gapopen qstart qend sstart send evalue bitscore slen".split(" ")

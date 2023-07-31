@@ -51,7 +51,6 @@ rule dm_ncbi_accession:
 
 
 # GET ACCESSION FROM TAXID
-
 rule dm_ncbi_aggregate_accession_from_ncbi_cli_taxid:
     output:
         os.path.join(RESDIR,"tmp","accession.cli.txt"),

@@ -27,7 +27,6 @@ def genomes_into_batches():
     return batches
 
 GENOMESBATCH = genomes_into_batches()
-print(GENOMESBATCH)
 
 def workflow_output_files(wildcards):
     # mandatory files

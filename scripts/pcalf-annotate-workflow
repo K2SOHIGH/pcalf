@@ -52,6 +52,9 @@ def get_args():
     parser.add_argument("--checkm", default=None , type=str , 
             help = "path to checkm datas. [None]")
 
+    parser.add_argument("-z", "--batch-size", default=1500 , type=int , 
+            help = "Batch size for CheckM and GTDBTK. [1500]")
+
     parser.add_argument('-q', '--quick', default=False, action="store_true", 
             help = "If set CheckM and GTDB-TK steps will not be run [False]")
 
@@ -153,6 +156,7 @@ def main():
 
     annotate_module.config["config-genomes"]["CheckM_data"] = args.checkm
     annotate_module.config["config-genomes"]["GTDB"] =  args.gtdb
+    annotate_module.config["config-genomes"]["batch_size"] =  args.batch_size
     
     annotate_module.config["config-ccya"]["glyx3_msa"] = glyx3
     annotate_module.config["config-ccya"]["gly1_msa"]  = gly1

@@ -48,45 +48,6 @@ TAXCOLS = ['Bin Id',
  '# unique markers (of 43)',
   '# multi-copy',
    'Taxonomy']
-
-
-
-# rule cm_empty_checkm_tables:
-#     output:
-#         taxo   = temp(os.path.join(RESDIR , "checkm-res","tables","checkM_taxonomy.tsv")),
-#         stats  = temp(os.path.join(RESDIR , "checkm-res","tables","checkM_statistics.tsv")),
-#         fstats = temp(os.path.join(RESDIR , "checkm-res","tables","checkM_statistics_full.tsv")),
-#     params:
-#         genomes = INPUT
-#     run:
-#         import pandas as pd
-#         tdf = pd.DataFrame(
-#             columns = TAXCOLS[1:],
-#             index = list(params.genomes.keys())
-#             )
-#         tdf.index.name = TAXCOLS[0]
-#         tdf.to_csv(str(output.taxo),sep="\t",header=True)
-
-#         sdf = pd.DataFrame(
-#             columns = STATSCOLS[1:],
-#             index = list(params.genomes.keys())
-#             )
-#         sdf.index.name = STATSCOLS[0]
-#         sdf.to_csv(str(output.stats),sep="\t",header=True)
-
-#         fsdf = pd.DataFrame(
-#             columns = FULLSTATSCOLS[1:],
-#             index = list(params.genomes.keys())
-#             )
-#         fsdf.index.name = FULLSTATSCOLS[0]
-#         fsdf.to_csv(str(output.fstats),sep="\t",header=True)
-
-
-# rule cm_target_quick_checkm:
-#     output:
-#         touch(temp(os.path.join(RESDIR,"checkm-res","checkm.quick.done")))
-#     input:
-#         rules.cm_empty_checkm_tables.output
     
         
 rule cm_target_checkm:
@@ -220,10 +181,6 @@ rule cm_CHECKM_lineage_wf:
         "{params.checkm_dir} "  # (output) directory where to store the results
         "&>> {log} "
 
-def get_genome_file_for_checkm(wildcards):
-    return glob.glob(
-        os.path.join(RESDIR,"datas","assemblies", "ncbi_dataset", wildcards.bin, "GC*_genomic.fna.gz" )
-        )[0]
 
 rule cm_bins_into_batches:
     """ Gunzip a `fasta.gz` into the appropriate batch directory. """

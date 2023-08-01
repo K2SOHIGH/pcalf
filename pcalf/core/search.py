@@ -660,21 +660,28 @@ def iterative_pcalf(*args,**kwargs):
     keep_going = True
     fastas,names,glyx3,gly1,gly2,gly3,nterdb = args
     glyx3_initial_size = glyx3.hmm.nseq
+    sequences = Sequences()
+    sequence_accessions = []
     while keep_going:
         keep_going = False
         # do 
-        new_sequences, glyx3 , gly1, gly2, gly3 , nterdb  = pcalf(
+        ite_seqs, glyx3 , gly1, gly2, gly3 , nterdb  = pcalf(
             fastas,names,glyx3,gly1,gly2,gly3,nterdb,**kwargs)
+        for s in ite_seqs.sequences:
+            if s.id not in sequence_accessions:
+                sequence_accessions.append(s.id)
+                sequences.sequences.append(s)
+
         if glyx3.hmm.nseq > glyx3_initial_size:
             keep_going = True
             glyx3_initial_size = glyx3.hmm.nseq
 
-    ite+=1
-    logging.info('{}/{} iterations done.'.format(ite,max_ite))
-    if ite==max_ite:
-        keep_going = False
+        ite+=1
+        logging.info('{}/{} iterations done.'.format(ite,max_ite))
+        if ite==max_ite:
+            keep_going = False
     logging.info('Converged (i.e , no new sequence detected) in {} iterations [max-iteration: {}]'.format(ite,max_ite))
-    return new_sequences, glyx3 , gly1, gly2, gly3 , nterdb
+    return sequences, glyx3 , gly1, gly2, gly3 , nterdb
 
 
 

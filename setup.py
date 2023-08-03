@@ -7,7 +7,7 @@ with open("README.md", "r", encoding = "utf-8") as fh:
 
 setup(
     name='pcalf',
-    version='1.2.1',
+    version='1.2.2',
     description='Search calcyanin in a set of amino acid sequences',
     long_description = long_description,
     long_description_content_type = "text/markdown",

@@ -30,7 +30,6 @@ config-ccya:
   glyx3-coverage: null
   glyzip-evalue: null
   glyzip-coverage: null
-  iterative-search: True
   iterative-update: True
   max-iteration: 3
   Z: 10000 

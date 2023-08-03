@@ -34,9 +34,6 @@ def get_args():
     parser.add_argument('-o', dest='res_dir', type=str, required=True,
                         help='Output directory. pcalf will ouput several files including updated HMMs and MSAs, a feature table and a summary.')   
 
-    parser.add_argument('--iterative-search', action="store_true",
-                        help="If set, searches will be done with updated profiles until convergence or --max-iteration is reached . ")
-
     parser.add_argument('--max-iteration', default=4,
                         help="Max iteration to be done if iterative-search enable. (default: %(default)s) ")                        
 
@@ -202,13 +199,10 @@ def main():
     _gly2_nseq = gly2.hmm.nseq
     _gly3_nseq = gly3.hmm.nseq
 
-    if args.iterative_search:
-        pcalf_func = search.iterative_pcalf
-    else:
-        pcalf_func = search.pcalf
+
 
     logger.info("Start search.")
-    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 , u_nter = pcalf_func(
+    calseq , u_glyx3 , u_gly1, u_gly2 , u_gly3 , u_nter = search.run_pcalf(
         fastas,
         names,
         glyx3,
@@ -225,7 +219,8 @@ def main():
         nter_coverage_threshold = args.nter_coverage, 
         nter_evalue_threshold  =  args.nter_evalue,
         is_update_iterative=args.iterative_update,        
-        max_iteration=args.max_iteration
+        max_iteration=args.max_iteration,
+        res_dir = res_dir
     )
    
     logger.info("The search is over.")
@@ -239,69 +234,9 @@ def main():
     logger.info("# N_seqs within Gly3 HMM : {} [+{}]".format(
         u_gly3.hmm.nseq, u_gly3.hmm.nseq - _gly3_nseq))
     
-    logger.info("Dumping HMMs.") 
-    hmmdir = os.path.join(res_dir,"HMM")
-    os.makedirs(hmmdir,exist_ok=True)
-    u_glyx3.hmm.write(open(hmmdir + "/Glyx3.hmm","wb"))
-    u_gly1.hmm.write(open(hmmdir + "/Gly1.hmm","wb"))
-    u_gly2.hmm.write(open(hmmdir + "/Gly2.hmm","wb"))
-    u_gly3.hmm.write(open(hmmdir + "/Gly3.hmm","wb"))
+    ##
 
-    logger.info("Dumping MSAs.")
-    msadir = os.path.join(res_dir,"MSA")    
-    os.makedirs(msadir,exist_ok=True)
-    u_glyx3.msa.write(open(msadir+"/Glyx3.msa.fa","wb"),format="afa")
-    u_gly1.msa.write(open(msadir+"/Gly1.msa.fa","wb"),format="afa")
-    u_gly2.msa.write(open(msadir+"/Gly2.msa.fa","wb"),format="afa")
-    u_gly3.msa.write(open(msadir+"/Gly3.msa.fa","wb"),format="afa")
-    
-    logger.info("Dumping N-ter table.")
-    with open(res_dir+"/N-ter-DB.tsv","w") as nterout:
-        for nterid, n in u_nter.items():
-            nterout.write("{}\t{}\t{}\n".format(n[0],nterid,n[1]))
-
-    logger.info("Writing feature table.")
-    features = calseq.to_feature_table()
-    features.to_csv(res_dir + "/pcalf.features.tsv",sep="\t",header=True,index=True)
-    logger.info("Writing hits table")
-    hits = calseq.to_hits_table()
-    hits.to_csv(res_dir + "/pcalf.hits.tsv",sep="\t",header=True,index=True)
-
-    logger.info("Making summary.")
-    summary_datas = []
-    for idx, seq_features_df in features.groupby(["sequence_id","sequence_src"]):
-        sequence = idx[0]
-        sequence_src = idx[1]
-        cterom = ",".join(
-                        list(
-                            seq_features_df[seq_features_df.feature_id.isin(["Gly1","Gly2","Gly3"]) ].sort_values("feature_start").feature_id
-                            )
-                )
-
-        nter_type = None
-        nter_neighbor = None 
-        if not seq_features_df[seq_features_df.feature_id == "N-ter" ].empty:
-            nter_type,nter_neighbor = "".join(set(
-                seq_features_df[seq_features_df.feature_id == "N-ter" ].feature_src
-            )).split("||")
-
-        summary_datas.append(
-            {
-                "sequence_accession":sequence,
-                "sequence_src": sequence_src,
-                "flag":search.decision_tree(nter_type,cterom),
-                "nter":nter_type,
-                "nter_neighbor": nter_neighbor,
-                "cter":cterom,
-                "sequence":str(calseq.get_seq_by_id(sequence).seq),
-                # "iteration":seq_per_iteration[sequence]
-            }
-        )
-    if summary_datas:
-        df = pd.DataFrame(summary_datas).set_index("sequence_accession")
-    else:
-        df = pd.DataFrame(columns=["sequence_accession","sequence_src","flag","nter","nter_neighbor","cter","sequence"]).set_index("sequence_accession")
-    df.to_csv(res_dir + "/pcalf.summary.tsv",sep="\t",index=True,header=True)
+   
 
 if __name__ == "__main__":
     sys.exit(main())

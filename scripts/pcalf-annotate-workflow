@@ -32,7 +32,6 @@ def get_args():
 
     pcalf-annotate
     Annotate genomes using pcalf, GTDB-TK, CheckM and ncbi-datasets CLI.
-
     """,
         formatter_class= argparse.RawTextHelpFormatter
     )
@@ -52,6 +51,9 @@ def get_args():
     parser.add_argument("--checkm", default=None , type=str , 
             help = "path to checkm datas. [None]")
 
+    parser.add_argument("-z", "--batch-size", default=1500 , type=int , 
+            help = "Batch size for CheckM and GTDBTK. [1500]")
+
     parser.add_argument('-q', '--quick', default=False, action="store_true", 
             help = "If set CheckM and GTDB-TK steps will not be run [False]")
 
@@ -60,6 +62,26 @@ def get_args():
     
     parser.add_argument('--original', action="store_true", 
             help = "Use original HMMs and N-ter files for pcalf. [False]")
+
+    parser.add_argument('--glyx3-msa', dest = 'glyx3_msa', 
+                        default = None,
+                        help='Path to GlyX3 msa (default: %(default)s). A weighted HMM will be built from it.' )
+
+    parser.add_argument('--gly1-msa', dest = 'gly1_msa', 
+                        default = None, 
+                        help='Path to GlyZip1 msa (default: %(default)s). A weighted HMM will be built from it.' )
+
+    parser.add_argument('--gly2-msa', dest = 'gly2_msa', 
+                        default = None,
+                        help='path to GlyZip2 msa (default: %(default)s). A weighted HMM will be built from it.')
+
+    parser.add_argument('--gly3-msa', dest = 'gly3_msa', 
+                        default = None,
+                        help='path to GlyZip3 msa (default: %(default)s). A weighted HMM will be built from it.')    
+
+    parser.add_argument('--nter', dest = 'nter', 
+                        default = None,
+                        help='path to N-ter file (default: %(default)s).')    
 
     parser.add_argument("--debug", action="store_true")
 
@@ -112,10 +134,9 @@ def main():
     
     logger.debug("DB file is : {}".format(dbfile))
     db = PcalfDB.PcalfDB(dbfile)    
-    glyx3 , gly1 , gly2, gly3 , nter = None, None, None, None, None
+    glyx3 , gly1 , gly2, gly3 , nter = args.glyx3_msa, args.gly1_msa, args.gly2_msa, args.gly3_msa , args.nter
 
-    if args.db: #db file provided        
-        
+    if args.db: #db file provided            
         logger.info("MSAs from {} will be used.".format(args.db))  
         externaldb = PcalfDB.PcalfDB(args.db)    
 
@@ -153,6 +174,7 @@ def main():
 
     annotate_module.config["config-genomes"]["CheckM_data"] = args.checkm
     annotate_module.config["config-genomes"]["GTDB"] =  args.gtdb
+    annotate_module.config["config-genomes"]["batch_size"] =  args.batch_size
     
     annotate_module.config["config-ccya"]["glyx3_msa"] = glyx3
     annotate_module.config["config-ccya"]["gly1_msa"]  = gly1

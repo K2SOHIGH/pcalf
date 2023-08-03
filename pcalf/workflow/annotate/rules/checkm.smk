@@ -48,45 +48,6 @@ TAXCOLS = ['Bin Id',
  '# unique markers (of 43)',
   '# multi-copy',
    'Taxonomy']
-
-
-
-# rule cm_empty_checkm_tables:
-#     output:
-#         taxo   = temp(os.path.join(RESDIR , "checkm-res","tables","checkM_taxonomy.tsv")),
-#         stats  = temp(os.path.join(RESDIR , "checkm-res","tables","checkM_statistics.tsv")),
-#         fstats = temp(os.path.join(RESDIR , "checkm-res","tables","checkM_statistics_full.tsv")),
-#     params:
-#         genomes = INPUT
-#     run:
-#         import pandas as pd
-#         tdf = pd.DataFrame(
-#             columns = TAXCOLS[1:],
-#             index = list(params.genomes.keys())
-#             )
-#         tdf.index.name = TAXCOLS[0]
-#         tdf.to_csv(str(output.taxo),sep="\t",header=True)
-
-#         sdf = pd.DataFrame(
-#             columns = STATSCOLS[1:],
-#             index = list(params.genomes.keys())
-#             )
-#         sdf.index.name = STATSCOLS[0]
-#         sdf.to_csv(str(output.stats),sep="\t",header=True)
-
-#         fsdf = pd.DataFrame(
-#             columns = FULLSTATSCOLS[1:],
-#             index = list(params.genomes.keys())
-#             )
-#         fsdf.index.name = FULLSTATSCOLS[0]
-#         fsdf.to_csv(str(output.fstats),sep="\t",header=True)
-
-
-# rule cm_target_quick_checkm:
-#     output:
-#         touch(temp(os.path.join(RESDIR,"checkm-res","checkm.quick.done")))
-#     input:
-#         rules.cm_empty_checkm_tables.output
     
         
 rule cm_target_checkm:
@@ -97,7 +58,8 @@ rule cm_target_checkm:
     params:
         tmp = os.path.join(RESDIR , "checkm-res", "tmp"),
     shell:
-        'rm -r {params.tmp} && touch {output}'
+        'touch {output}'
+        #'rm -r {params.tmp} && 
 
 def aggregate_batches_checkm(wildcards):    
     return expand(
@@ -172,21 +134,18 @@ rule cm_CHECKM_qa_full:
         "&>> {log} "
 
 
-def get_bins(wildcards):
-    return expand(
-        os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', '{bin}.fna'),
-        batch=wildcards.batch , bin = list(GENOMESBATCH[wildcards.batch].keys()) 
-    )
-    
+def get_extension_from_file(wildcards,input):
+    with open(str(input)) as f:
+        return "."+os.path.basename(f.read().strip()).split('.')[-1]
+
 rule cm_CHECKM_lineage_wf:
     """ Main checkM rule.
         Compute CheckM on a given batch of bins.
     """
     output:
         tsv = os.path.join(RESDIR , "checkm-res", "tmp", "{batch}","lineage_wf","checkM_statistics.tsv"),
-    input:
-        # Function that returns the locations of genomes associated with {batch}        
-        get_bins,
+    input:             
+        os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', 'batch.tsv'),
     conda: 
         os.path.join(".." , "envs" , "checkm.yaml")
     resources:
@@ -200,40 +159,52 @@ rule cm_CHECKM_lineage_wf:
     params:            
         checkm_dir = lambda wildcards, output: os.path.dirname(output.tsv),
         checkm_data = config["config-genomes"]["CheckM_data"],
-        batch_dir = lambda wildcards, input: os.path.dirname(input[0]),
         low_memory = "--reduced_tree" if config["config-genomes"]["low_memory"] else "",
-        #tmp = "--tmpdir %s" % RESDIR , "checkm-res", "tmp" if RESDIR , "checkm-res", "tmp" else "",
+        tmp = os.path.join(RESDIR , "checkm-res", "tmp", '{batch}', 'tmp' ),
+        ext = lambda wildcards,input: get_extension_from_file(wildcards,input),
     log:
         os.path.join(RESDIR , "checkm-res", 'logs', "{batch}", checkm_res , "lineage_wf.log")
     benchmark:
         os.path.join(RESDIR , "checkm-res" , "benchmarks","lineage","{batch}.txt") 
     shell:
+        #"mkdir -p {params.tmp}; "
         "echo {params.checkm_data}; " #export LC_ALL=C ; 
         "checkm data setRoot {params.checkm_data} &>> {log}; "
         "checkm lineage_wf "
         "--tab_table "          # output as a tab-separated file
         "-f {output.tsv} "      # filename for the output
         "-t {threads} "
-        "{params.low_memory} "
-        "-x fna "               # extension of the bin files
-        "{params.batch_dir}/ "  # (input) directory containing the bin files
+        "{params.low_memory} "        
+        "-x {params.ext} "               # extension of the bin files
+        "{input} "  
         "{params.checkm_dir} "  # (output) directory where to store the results
-        "&>> {log} "
+        "&>> {log}; "
+        
 
-def get_genome_file_for_checkm(wildcards):
-    return glob.glob(
-        os.path.join(RESDIR,"datas","assemblies", "ncbi_dataset", wildcards.bin, "GC*_genomic.fna.gz" )
-        )[0]
+
+# rule cm_bins_into_batches:
+#     """ Gunzip a `fasta.gz` into the appropriate batch directory. """
+#     output:
+#         temp(os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', '{bin}.fna'))
+#     input:
+#         lambda wildcards: GENOMESBATCH[wildcards.batch][wildcards.bin],
+#     params:
+#         cmd = lambda wildcards,input: "gunzip -c " if str(input).endswith('.gz') else "cat ",
+#     threads: 
+#         1 
+#     shell:
+#         "{params.cmd} {input} > {output}"
+
 
 rule cm_bins_into_batches:
-    """ Gunzip a `fasta.gz` into the appropriate batch directory. """
     output:
-        temp(os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', '{bin}.fna'))
-    input:
-        lambda wildcards: GENOMESBATCH[wildcards.batch][wildcards.bin],
+        os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', 'batch.tsv')
     params:
-        cmd = lambda wildcards,input: "gunzip -c " if str(input).endswith('.gz') else "cat ",
-    threads: 
-        1 
-    shell:
-        "{params.cmd} {input} > {output}"
+        batch = GENOMESBATCH[wildcards.batch],
+    run:
+        batch_genomes = params.batch[str(wildcards.batch)]      
+        with open(str(output),'w') as fh:
+            for label,genome_path in batch_genomes.items():                
+                fh.write('{}\t{}\n'.format(
+                    label,genome_path
+                ))

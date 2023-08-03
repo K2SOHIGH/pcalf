@@ -5,7 +5,7 @@ import tempfile
 import concurrent
 import concurrent.futures
 import multiprocessing
-
+import yaml
 import pandas as pd
 from shutil import which
 
@@ -473,6 +473,81 @@ def auto_thresholds(reference,glyx3,gly1,gly2,gly3,Z,domZ):
     return (glyx3_evalue_threshold, glyx3_coverage_threshold, glyzip_evalue_threshold, glyzip_coverage_threshold)
 
 
+def dump_iteration(
+        res_dir,
+        sequences,
+        glyx3,
+        gly1,
+        gly2,
+        gly3,
+        nter
+        ):    
+    logging.info("Dumping HMMs.") 
+    hmmdir = os.path.join(res_dir,"HMM")
+    os.makedirs(hmmdir,exist_ok=True)
+    glyx3.hmm.write(open(hmmdir + "/Glyx3.hmm","wb"))
+    gly1.hmm.write(open(hmmdir + "/Gly1.hmm","wb"))
+    gly2.hmm.write(open(hmmdir + "/Gly2.hmm","wb"))
+    gly3.hmm.write(open(hmmdir + "/Gly3.hmm","wb"))
+
+    logging.info("Dumping MSAs.")
+    msadir = os.path.join(res_dir,"MSA")    
+    os.makedirs(msadir,exist_ok=True)
+    glyx3.msa.write(open(msadir+"/Glyx3.msa.fa","wb"),format="afa")
+    gly1.msa.write(open(msadir+"/Gly1.msa.fa","wb"),format="afa")
+    gly2.msa.write(open(msadir+"/Gly2.msa.fa","wb"),format="afa")
+    gly3.msa.write(open(msadir+"/Gly3.msa.fa","wb"),format="afa")
+    
+    logging.info("Dumping N-ter table.")
+    with open(res_dir+"/N-ter-DB.tsv","w") as nterout:
+        for nterid, n in nter.items():
+            nterout.write("{}\t{}\t{}\n".format(n[0],nterid,n[1]))
+
+    logging.info("Writing feature table.")
+    features = sequences.to_feature_table()
+    features.to_csv(res_dir + "/pcalf.features.tsv",sep="\t",header=True,index=True)
+    logging.info("Writing hits table")
+    hits = sequences.to_hits_table()
+    hits.to_csv(res_dir + "/pcalf.hits.tsv",sep="\t",header=True,index=True)
+
+    logging.info("Making summary.")
+    summary_datas = []
+    for idx, seq_features_df in features.groupby(["sequence_id","sequence_src"]):
+        sequence = idx[0]
+        sequence_src = idx[1]
+        cterom = ",".join(
+                        list(
+                            seq_features_df[seq_features_df.feature_id.isin(["Gly1","Gly2","Gly3"]) ].sort_values("feature_start").feature_id
+                            )
+                )
+
+        nter_type = None
+        nter_neighbor = None 
+        if not seq_features_df[seq_features_df.feature_id == "N-ter" ].empty:
+            nter_type,nter_neighbor = "".join(set(
+                seq_features_df[seq_features_df.feature_id == "N-ter" ].feature_src
+            )).split("||")
+
+        summary_datas.append(
+            {
+                "sequence_accession":sequence,
+                "sequence_src": sequence_src,
+                "flag":decision_tree(nter_type,cterom),
+                "nter":nter_type,
+                "nter_neighbor": nter_neighbor,
+                "cter":cterom,
+                "sequence":str(sequences.get_seq_by_id(sequence).seq),
+                # "iteration":seq_per_iteration[sequence]
+            }
+        )
+    if summary_datas:
+        df = pd.DataFrame(summary_datas).set_index("sequence_accession")
+    else:
+        df = pd.DataFrame(columns=["sequence_accession","sequence_src","flag","nter","nter_neighbor","cter","sequence"]).set_index("sequence_accession")
+    df.to_csv(res_dir + "/pcalf.summary.tsv",sep="\t",index=True,header=True)
+
+
+
 def pcalf(        
         fastas:list, 
         srcs:list,
@@ -551,6 +626,11 @@ def pcalf(
         nter_evalue_threshold, nter_coverage_threshold
     ))
 
+    thresholds = {
+        "glyx3":{"coverage":glyx3_coverage_threshold,"e-value":glyx3_evalue_threshold},
+        "glyzips":{"coverage":glyzip_coverage_threshold,"e-value":glyzip_evalue_threshold}
+        }
+
     for profile in [glyx3,gly1,gly2,gly3]:
         logging.info('{}:  Number of sequences = {}.'.format(
             profile.hmm.name.decode(),profile.hmm.nseq))
@@ -586,8 +666,6 @@ def pcalf(
         nter_coverage_threshold, 
         nter_evalue_threshold) 
     
-
-   
     new_calc = 0
     new_seq = 0
     valid_calcyanin = Sequences() 
@@ -600,17 +678,17 @@ def pcalf(
                                     seq.get_feature("Gly2" )+
                                     seq.get_feature("Gly3" )])
                 flag = decision_tree(nter,cter)
+                seq.flag = flag
                 if flag == "Calcyanin with known N-ter" or flag == "Calcyanin with new N-ter":
                     new_calc += 1 
                     valid_calcyanin.sequences.append(seq)
             
 
         logging.info("New sequences with a match against GlyX3 [+{}]".format(new_seq))                    
-        logging.info("New calcyanin [+{}] ! :)".format(new_calc))                            
-        
-        logging.info("Updating HMM profiles and N-ter DB.")
-        
+        logging.info("New calcyanin [+{}] ! :)".format(new_calc))                                    
+        logging.info("Updating HMM profiles and N-ter DB.")        
         glyx3features = valid_calcyanin.get_feature("GlyX3")
+        
         if glyx3features:  
             logging.info("Updating GlyX3")
             glyx3 = update_hmm(glyx3features,glyx3,is_update_iterative)
@@ -649,34 +727,57 @@ def pcalf(
                         src,
                     ))                     
             logging.info("Number of sequences in the N-ter database after update : {}".format(len(nterdb)))                    
-    return sequences, glyx3 , gly1, gly2, gly3 , nterdb 
+    return sequences, glyx3, gly1, gly2, gly3, nterdb , thresholds
           
 
 
-def iterative_pcalf(*args,**kwargs):
+def run_pcalf(*args,**kwargs):
     ite = 0
+    thresholds_by_ite = {} 
     max_ite = kwargs.get('max_iteration')
+    res_dir = kwargs.get('res_dir')
     logging.info('Iterative search enable [max-iteration: {}]'.format(max_ite))
     keep_going = True
     fastas,names,glyx3,gly1,gly2,gly3,nterdb = args
     glyx3_initial_size = glyx3.hmm.nseq
-    while keep_going:
+    
+    while keep_going:        
         keep_going = False
         # do 
-        new_sequences, glyx3 , gly1, gly2, gly3 , nterdb  = pcalf(
+        ite_seqs, glyx3 , gly1, gly2, gly3 , nterdb , thresholds  = pcalf(
             fastas,names,glyx3,gly1,gly2,gly3,nterdb,**kwargs)
+        thresholds_by_ite["iteration_{}".format(ite)] = thresholds
         if glyx3.hmm.nseq > glyx3_initial_size:
             keep_going = True
             glyx3_initial_size = glyx3.hmm.nseq
+            dump_iteration(os.path.join(res_dir,'iterations','iteration_{}'.format(ite)),                
+                ite_seqs,
+                glyx3,
+                gly1,
+                gly2,
+                gly3,
+                nterdb
+            )
 
-    ite+=1
-    logging.info('{}/{} iterations done.'.format(ite,max_ite))
-    if ite==max_ite:
-        keep_going = False
+        ite+=1
+        logging.info('{}/{} iterations done.'.format(ite,max_ite))
+        if ite==max_ite:
+            keep_going = False
     logging.info('Converged (i.e , no new sequence detected) in {} iterations [max-iteration: {}]'.format(ite,max_ite))
-    return new_sequences, glyx3 , gly1, gly2, gly3 , nterdb
-
-
+    dump_iteration(
+        res_dir, 
+        ite_seqs,
+        glyx3,
+        gly1,
+        gly2,
+        gly3,
+        nterdb
+    )
+    logging.info('Last iteration results saved under {}'.format(res_dir))
+    thresholds_file_path = os.path.join(res_dir,'thresholds.yaml')
+    yaml.dump(thresholds_by_ite,open(thresholds_file_path ,'w') )
+    logging.info('Thresholds used for each iteration stored at : {}'.format(thresholds_file_path))
+    return ite_seqs, glyx3 , gly1, gly2, gly3 , nterdb
 
 def decision_tree(nter , cter):
     """give a flag to a calcyanin based on its C-ter modular organization and its N-ter."""

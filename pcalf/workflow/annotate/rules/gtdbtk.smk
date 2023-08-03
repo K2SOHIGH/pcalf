@@ -21,26 +21,6 @@ GTDBSUMMARYCOLS = ['user_genome',
 
 
 
-# rule gm_empty_gtdbtk_summary:
-#     output:
-#         temp(os.path.join(RESDIR , "gtdbtk-res","gtdbtk.ar53.bac120.summary.clean.tsv")),
-#     params:
-#         genomes = INPUT
-#     run:
-#         import pandas as pd
-#         df = pd.DataFrame(
-#             columns = GTDBSUMMARYCOLS[1:],
-#             index = list(params.genomes.keys())            
-#             )
-#         df.index.name = GTDBSUMMARYCOLS[0]        
-#         df.to_csv(str(output),sep="\t",header=True)
-                
-# rule gm_target_quick_gtdbtk:
-#     output:
-#         touch(temp(os.path.join(RESDIR,"gtdbtk-res","gtdbtk.quick.done")))
-#     input:
-#         rules.gm_empty_gtdbtk_summary.output
-
 rule gm_target_gtdbtk:
     output:
         touch(temp(os.path.join(RESDIR,"gtdbtk-res","gtdbtk.done")))
@@ -51,58 +31,55 @@ rule gm_GTDBTK_clean_table:
     output:
         os.path.join(RESDIR , "gtdbtk-res","gtdbtk.ar53.bac120.summary.clean.tsv")
     input:
-        os.path.join(RESDIR , "gtdbtk-res","gtdbtk.ar53.bac120.summary.tsv")
-    run:
+        expand(
+            os.path.join(RESDIR , "gtdbtk-res", "{batch}", "gtdbtk.ar53.bac120.summary.tsv")
+            ,batch = GENOMESBATCH.keys())
+    run:        
         import os
         import pandas as pd
-        print(os.stat(str(input)).st_size)
-        print(str(input))
-        df = pd.read_csv(str(input),sep="\t",header=0,index_col=None)   
-        print(df)
-        if os.stat(str(input)).st_size != 0:
-            df = pd.read_csv(str(input),sep="\t",header=0,index_col=None)   
-            print(df)     
-            df.user_genome = df.user_genome.str.replace("USER_","")
-            print(df)
-            df.to_csv(str(output),sep="\t",header=True,index=False)
-        else:
-            open(str(output),'w').close()
+        dfs = []
+        for f in input:
+            if os.stat(str(f)).st_size != 0:
+                t = pd.read_csv(str(f),sep='\t',header=0)
+                dfs.append(t)    
+        df = pd.DataFrame()
+        if dfs:
+            df = pd.concat(dfs,axis=0)            
+        df.to_csv(str(output),index=False,header=True,sep='\t')
 
 
 rule gm_concatenate_archaea_and_bacteria_results:
     output:
-        os.path.join(RESDIR, "gtdbtk-res", "gtdbtk.ar53.bac120.summary.tsv")                                            
+        os.path.join(RESDIR, "gtdbtk-res", "{batch}", "gtdbtk.ar53.bac120.summary.tsv")                                            
     input:
-        bac = os.path.join(RESDIR, "gtdbtk-res", "gtdbtk.bac120.summary.tsv"),
-        ar  = os.path.join(RESDIR, "gtdbtk-res", "gtdbtk.ar53.summary.tsv"  ),                         
+        bac = os.path.join(RESDIR, "gtdbtk-res", "{batch}", "gtdbtk.bac120.summary.tsv"),
+        ar  = os.path.join(RESDIR, "gtdbtk-res", "{batch}", "gtdbtk.ar53.summary.tsv"  ),                         
     run:
+        import os
         import pandas as pd
-        bac = pd.DataFrame()
-        if os.stat(str(input.bac)).st_size != 0:
-            bac = pd.read_csv(str(input.bac),sep='\t',header=0)
-        arc = pd.DataFrame()
-        if os.stat(str(input.ar)).st_size != 0:
-            arc = pd.read_csv(str(input.ar),sep='\t',header=0)
+        dfs = []
+        for f in input:
+            if os.stat(str(f)).st_size != 0:
+                t = pd.read_csv(str(f),sep='\t',header=0)
+                dfs.append(t)    
+        df = pd.DataFrame()
+        if dfs:
+            df = pd.concat(dfs,axis=0)
+            df.user_genome = df.user_genome.str.replace("USER_","")
+        df.to_csv(str(output),index=False,header=True,sep='\t')
 
-        pd.concat([bac,arc]).to_csv(str(output),index=False,header=True,sep='\t')
-        # SILENT ERROR ON CLUSTER ????? 
-        #"cat {input} | grep -m 1 user_genome > {output}; " # grep header from input files, either input.bac and input.ar can be empty
-        #"tail -q -n +2 {input} >> {output} "
-        # "cat {input.bac} "                # keep header from first input
-        # "<(tail -q -n +2 {input.ar}) "    # remove header from other input
-        # "> {output} "
 
 
 rule gm_gtdbtk_classify_wf:
     output:
-        os.path.join(RESDIR , "gtdbtk-res",  "gtdbtk.ar53.summary.tsv"),        
-        os.path.join(RESDIR , "gtdbtk-res",  "gtdbtk.bac120.summary.tsv"),
+        os.path.join(RESDIR , "gtdbtk-res", "{batch}", "gtdbtk.ar53.summary.tsv"),        
+        os.path.join(RESDIR , "gtdbtk-res", "{batch}", "gtdbtk.bac120.summary.tsv"),
     input:
-        os.path.join(RESDIR , "gtdbtk-res", "batchfile.tsv"),
+        os.path.join(RESDIR , "gtdbtk-res", "{batch}", "batchfile.tsv"),
     conda: 
         os.path.join(".." , "envs" , "gtdbtk_2.1.yaml")
     params:
-        outdir = os.path.join(RESDIR , "gtdbtk-res"),
+        outdir = os.path.join(RESDIR , "gtdbtk-res", "{batch}"),
         gtdbtk_data = config["config-genomes"]["GTDB"],
     threads:
         15
@@ -116,16 +93,19 @@ rule gm_gtdbtk_classify_wf:
         "touch {output}"
 
 
+#def get_batch(wildcards):
+
+
 rule gm_gtdbtk_batchfile:
     output:
-        os.path.join(RESDIR , "gtdbtk-res", "batchfile.tsv")
+        os.path.join(RESDIR , "gtdbtk-res", "{batch}", "batchfile.tsv")
     params:
-        input_datas = INPUT
+        batch = lambda wildcards: GENOMESBATCH[wildcards.batch],
     run: 
         with open(str(output),'w') as fh:
-            for gid, files in params.input_datas.items():
+            for gid, file in params.batch.items():
                 fh.write("{}\tUSER_{}\n".format(                    
-                    files["genome"],
+                    file,
                     gid
                 )) 
             

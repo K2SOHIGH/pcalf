@@ -25,5 +25,7 @@ rule dm_accession:
         INPUT    
     run:        
         with open(str(output), 'w' ) as fh:
-            for k in INPUT.keys():                
-                fh.write("{}\n".format(k))                
+            for k in INPUT.keys():  
+                if k.startswith('GCA_') or k.startswith('GCF_'):
+                    k = "_".join(k.split('_')[0:2])
+                    fh.write("{}\n".format(k))                

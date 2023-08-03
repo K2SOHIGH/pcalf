@@ -39,11 +39,6 @@ def workflow_output_files(wildcards):
     if not QUICK:
         files.append(os.path.join(RESDIR,"checkm-res","checkm.done"))
         files.append(os.path.join(RESDIR,"gtdbtk-res","gtdbtk.done"))
-    #else:
-    #    files.append(os.path.join(RESDIR,"checkm-res","checkm.quick.done"))
-    #    files.append(os.path.join(RESDIR,"gtdbtk-res","gtdbtk.quick.done"))
-        #files.append(os.path.join(RESDIR , "gtdbtk-res","gtdbtk.ar53.bac120.summary.clean.tsv"))
-    
     return files
 
 include: "rules/pcalf.smk"

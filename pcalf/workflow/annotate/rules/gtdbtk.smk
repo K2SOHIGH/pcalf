@@ -103,9 +103,9 @@ rule gm_gtdbtk_batchfile:
         batch = lambda wildcards: GENOMESBATCH[wildcards.batch],
     run: 
         with open(str(output),'w') as fh:
-            for gid, files in params.batch.items():
+            for gid, file in params.batch.items():
                 fh.write("{}\tUSER_{}\n".format(                    
-                    files["genome"],
+                    file,
                     gid
                 )) 
             

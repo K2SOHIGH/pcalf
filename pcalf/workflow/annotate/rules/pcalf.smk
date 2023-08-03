@@ -60,7 +60,7 @@ def parse_prodigal_header(header):
     return "_".join(seqid.replace('>','').split("_")[:-1]) , start, stop, strand, partial, pseudo, "Prodigal prediction"
 
 
-rule ccya:
+rule pm_CCYA:
     output:
         os.path.join(RESDIR , "pcalf" , "ccyA.summary.tsv" ),
     input:
@@ -152,7 +152,7 @@ rule pm_format_nter:
         df.columns = ["nter","sequence_id","sequence"]
         df.to_csv(str(output),sep="\t", header=True,index = False)
 
-rule pm_pcalf:
+rule pm_PCALF:
     output:
         os.path.join(RESDIR , "pcalf" , "pcalf.summary.tsv" ),
         os.path.join(RESDIR , "pcalf" , "pcalf.features.tsv"),
@@ -178,9 +178,8 @@ rule pm_pcalf:
         coverage = "--glyx3-coverage {}".format(config["config-ccya"]["glyx3-coverage"]) if config["config-ccya"]["glyx3-coverage"] else "",
         glyzip_evalue = "--glyzip-evalue {}".format(config["config-ccya"]["glyzip-evalue"]) if config["config-ccya"]["glyzip-evalue"] else "",
         glyzip_coverage = "--glyzip-coverage {}".format(config["config-ccya"]["glyzip-coverage"]) if config["config-ccya"]["glyzip-coverage"] else "",
-        maxite = config["config-ccya"]['max-iteration'],
-        iterative_search = '--iterative-search' if config["config-ccya"]['iterative-search'] else '',
-        iterative_update = '--iterative-search' if config["config-ccya"]['iterative-update'] else '',
+        maxite = config["config-ccya"]['max-iteration'],        
+        iterative_update = '--iterative-update' if config["config-ccya"]['iterative-update'] else '',
         Z = "-Z {}".format(config["config-ccya"]["Z"]) if config["config-ccya"]["Z"] else "",
         domZ = "--domZ {}".format(config["config-ccya"]["domZ"]) if config["config-ccya"]["domZ"] else "",
     log:
@@ -205,7 +204,6 @@ rule pm_pcalf:
         "{params.coverage} "
         "{params.glyzip_evalue} "
         "{params.glyzip_coverage} "
-        "{params.iterative_search} "
         "{params.iterative_update} "
         "--max-iteration {params.maxite} "
         "{params.Z} "

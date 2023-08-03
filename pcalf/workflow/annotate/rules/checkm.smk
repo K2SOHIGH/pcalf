@@ -58,7 +58,8 @@ rule cm_target_checkm:
     params:
         tmp = os.path.join(RESDIR , "checkm-res", "tmp"),
     shell:
-        'rm -r {params.tmp} && touch {output}'
+        'touch {output}'
+        #'rm -r {params.tmp} && 
 
 def aggregate_batches_checkm(wildcards):    
     return expand(
@@ -133,21 +134,18 @@ rule cm_CHECKM_qa_full:
         "&>> {log} "
 
 
-def get_bins(wildcards):
-    return expand(
-        os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', '{bin}.fna'),
-        batch=wildcards.batch , bin = list(GENOMESBATCH[wildcards.batch].keys()) 
-    )
-    
+def get_extension_from_file(wildcards,input):
+    with open(str(input)) as f:
+        return "."+os.path.basename(f.read().strip()).split('.')[-1]
+
 rule cm_CHECKM_lineage_wf:
     """ Main checkM rule.
         Compute CheckM on a given batch of bins.
     """
     output:
         tsv = os.path.join(RESDIR , "checkm-res", "tmp", "{batch}","lineage_wf","checkM_statistics.tsv"),
-    input:
-        # Function that returns the locations of genomes associated with {batch}        
-        get_bins,
+    input:             
+        os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', 'batch.tsv'),
     conda: 
         os.path.join(".." , "envs" , "checkm.yaml")
     resources:
@@ -161,36 +159,52 @@ rule cm_CHECKM_lineage_wf:
     params:            
         checkm_dir = lambda wildcards, output: os.path.dirname(output.tsv),
         checkm_data = config["config-genomes"]["CheckM_data"],
-        batch_dir = lambda wildcards, input: os.path.dirname(input[0]),
         low_memory = "--reduced_tree" if config["config-genomes"]["low_memory"] else "",
-        #tmp = "--tmpdir %s" % RESDIR , "checkm-res", "tmp" if RESDIR , "checkm-res", "tmp" else "",
+        tmp = os.path.join(RESDIR , "checkm-res", "tmp", '{batch}', 'tmp' ),
+        ext = lambda wildcards,input: get_extension_from_file(wildcards,input),
     log:
         os.path.join(RESDIR , "checkm-res", 'logs', "{batch}", checkm_res , "lineage_wf.log")
     benchmark:
         os.path.join(RESDIR , "checkm-res" , "benchmarks","lineage","{batch}.txt") 
     shell:
+        #"mkdir -p {params.tmp}; "
         "echo {params.checkm_data}; " #export LC_ALL=C ; 
         "checkm data setRoot {params.checkm_data} &>> {log}; "
         "checkm lineage_wf "
         "--tab_table "          # output as a tab-separated file
         "-f {output.tsv} "      # filename for the output
         "-t {threads} "
-        "{params.low_memory} "
-        "-x fna "               # extension of the bin files
-        "{params.batch_dir}/ "  # (input) directory containing the bin files
+        "{params.low_memory} "        
+        "-x {params.ext} "               # extension of the bin files
+        "{input} "  
         "{params.checkm_dir} "  # (output) directory where to store the results
-        "&>> {log} "
+        "&>> {log}; "
+        
+
+
+# rule cm_bins_into_batches:
+#     """ Gunzip a `fasta.gz` into the appropriate batch directory. """
+#     output:
+#         temp(os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', '{bin}.fna'))
+#     input:
+#         lambda wildcards: GENOMESBATCH[wildcards.batch][wildcards.bin],
+#     params:
+#         cmd = lambda wildcards,input: "gunzip -c " if str(input).endswith('.gz') else "cat ",
+#     threads: 
+#         1 
+#     shell:
+#         "{params.cmd} {input} > {output}"
 
 
 rule cm_bins_into_batches:
-    """ Gunzip a `fasta.gz` into the appropriate batch directory. """
     output:
-        temp(os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', '{bin}.fna'))
-    input:
-        lambda wildcards: GENOMESBATCH[wildcards.batch][wildcards.bin],
+        os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', 'batch.tsv')
     params:
-        cmd = lambda wildcards,input: "gunzip -c " if str(input).endswith('.gz') else "cat ",
-    threads: 
-        1 
-    shell:
-        "{params.cmd} {input} > {output}"
+        batch = GENOMESBATCH[wildcards.batch],
+    run:
+        batch_genomes = params.batch[str(wildcards.batch)]      
+        with open(str(output),'w') as fh:
+            for label,genome_path in batch_genomes.items():                
+                fh.write('{}\t{}\n'.format(
+                    label,genome_path
+                ))

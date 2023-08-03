@@ -32,7 +32,6 @@ def get_args():
 
     pcalf-annotate
     Annotate genomes using pcalf, GTDB-TK, CheckM and ncbi-datasets CLI.
-
     """,
         formatter_class= argparse.RawTextHelpFormatter
     )
@@ -63,6 +62,26 @@ def get_args():
     
     parser.add_argument('--original', action="store_true", 
             help = "Use original HMMs and N-ter files for pcalf. [False]")
+
+    parser.add_argument('--glyx3-msa', dest = 'glyx3_msa', 
+                        default = None,
+                        help='Path to GlyX3 msa (default: %(default)s). A weighted HMM will be built from it.' )
+
+    parser.add_argument('--gly1-msa', dest = 'gly1_msa', 
+                        default = None, 
+                        help='Path to GlyZip1 msa (default: %(default)s). A weighted HMM will be built from it.' )
+
+    parser.add_argument('--gly2-msa', dest = 'gly2_msa', 
+                        default = None,
+                        help='path to GlyZip2 msa (default: %(default)s). A weighted HMM will be built from it.')
+
+    parser.add_argument('--gly3-msa', dest = 'gly3_msa', 
+                        default = None,
+                        help='path to GlyZip3 msa (default: %(default)s). A weighted HMM will be built from it.')    
+
+    parser.add_argument('--nter', dest = 'nter', 
+                        default = None,
+                        help='path to N-ter file (default: %(default)s).')    
 
     parser.add_argument("--debug", action="store_true")
 
@@ -115,10 +134,9 @@ def main():
     
     logger.debug("DB file is : {}".format(dbfile))
     db = PcalfDB.PcalfDB(dbfile)    
-    glyx3 , gly1 , gly2, gly3 , nter = None, None, None, None, None
+    glyx3 , gly1 , gly2, gly3 , nter = args.glyx3_msa, args.gly1_msa, args.gly2_msa, args.gly3_msa , args.nter
 
-    if args.db: #db file provided        
-        
+    if args.db: #db file provided            
         logger.info("MSAs from {} will be used.".format(args.db))  
         externaldb = PcalfDB.PcalfDB(args.db)    
 

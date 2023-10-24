@@ -4,7 +4,7 @@
 PCALF stand for Python CALcyanin Finder.
 
 
-
+Calcyanin have been described in the article :
 
 
 Benzerara, K., Duprat, E., Bitard-Feildel, T., Caumes, G., Cassier-Chauvat, C., Chauvat, F., ... & Callebaut, I. (2022). [A new gene family diagnostic for intracellular biomineralization of amorphous Ca carbonates by cyanobacteria](https://doi.org/10.1093/gbe/evac026). Genome Biology and Evolution, 14(3), evac026. 
@@ -47,6 +47,12 @@ its N-terminus type and its C-terminus modular organization.
 mamba create -n pcalf -c k2sohigh pcalf;
 ```
 or 
+
+```bash
+conda create -n pcalf -c conda-forge -c k2sohigh pcalf;
+```
+
+or
 ```bash
 pip3 install pcalf;
 ```

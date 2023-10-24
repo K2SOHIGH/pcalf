@@ -200,7 +200,7 @@ rule cm_bins_into_batches:
     output:
         os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', 'batch.tsv')
     params:
-        batch = GENOMESBATCH[wildcards.batch],
+        batch = lambda wildcards: GENOMESBATCH[wildcards.batch],
     run:
         batch_genomes = params.batch[str(wildcards.batch)]      
         with open(str(output),'w') as fh:

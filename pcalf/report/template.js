@@ -617,14 +617,14 @@ $(".expand_next").click(function(){
     $(this).parent().next().toggleClass("constrain_height_div")
 })
 
-function get_feature_seq(seqid, seqdatas,feature_id){
+function get_feature_seq(seqid, seqdatas,ftype){
     let sequences = []
     let cpt = 0;
-    $.each(seqdatas.features, function(fid , feature){    
-        if (fid == feature_id){
+    $.each(seqdatas.features, function(fid , feature){  
+        if (feature.feature_id == ftype){
             cpt += 1;
-            let fasta = `>${seqid} ${feature_id} feature_no_${cpt}\n${feature.feature_seq}`;
-            sequences.push(fasta)                
+            let fasta = `>${seqid} ${ftype} feature_no_${cpt}\n${feature.feature_seq}`;
+            sequences.push(fasta)              
         }
     })
     return sequences

@@ -25,6 +25,14 @@ $( document ).ready(function() {
             $.extend(SEQUENCES, datas["sequences"]);
         })
     })
+    
+                
+    STRAINS = {}
+    $.each(DATAS,function(strainid,genomes){
+        $.each(genomes,function(gid,datas){
+            STRAINS[datas["Accession"]] = datas["Organism"];
+        })
+    })
 
     NTERS = []
     FLAGS = []
@@ -625,7 +633,9 @@ function get_feature_seq(seqid, seqdatas,feature_id){
 
 function get_seq_in_fasta_format(seqid,ftype){
     let seq_datas = SEQUENCES[seqid]
-    let header = `>${seqid} ${seq_datas.nter} ${seq_datas.cter}  ${seq_datas.flag} ${seq_datas.sequence_src}` 
+    let strain = STRAINS[seq_datas.sequence_src]
+    let header = `>${strain} ${seqid} ${seq_datas.nter} ${seq_datas.cter}  ${seq_datas.flag} ${seq_datas.sequence_src}` 
+    //let header = `>${seqid} ${seq_datas.nter} ${seq_datas.cter}  ${seq_datas.flag} ${seq_datas.sequence_src}` 
     let fasta = [];
     if (ftype=="faa"){
         fasta = [`${header}\n${seq_datas.sequence}`]

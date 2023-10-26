@@ -71,6 +71,7 @@ pandas==1.5.3
 tqdm==4.64.1
 plotly==5.11.0
 python-igraph==0.10.4
+importlib>=3.7
 ```
 
 ### External dependency :

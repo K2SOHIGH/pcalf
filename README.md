@@ -77,7 +77,13 @@ python-igraph==0.10.4
 ```
 blast
 ```
-See BLAST manual for instructions on how to download it [on Unix](https://www.ncbi.nlm.nih.gov/books/NBK52640/) (Linux and Mac), or [on Windows](https://www.ncbi.nlm.nih.gov/books/NBK52637/).
+If you want a standalone instalation, see BLAST manual for instructions on how to download it [on Unix](https://www.ncbi.nlm.nih.gov/books/NBK52640/) (Linux and Mac), or [on Windows](https://www.ncbi.nlm.nih.gov/books/NBK52637/).
+BLAST can also be downloaded within a conda environment
+
+```bash
+conda install -c bioconda blast
+```
+
 
 <br><br>
 ## Usage :

@@ -202,9 +202,8 @@ rule cm_bins_into_batches:
     params:
         batch = lambda wildcards: GENOMESBATCH[wildcards.batch],
     run:
-        batch_genomes = params.batch[str(wildcards.batch)]      
         with open(str(output),'w') as fh:
-            for label,genome_path in batch_genomes.items():                
+            for label,genome_path in params.batch.items():                
                 fh.write('{}\t{}\n'.format(
-                    label,genome_path
+                    label, genome_path
                 ))

@@ -25,6 +25,14 @@ $( document ).ready(function() {
             $.extend(SEQUENCES, datas["sequences"]);
         })
     })
+    
+                
+    STRAINS = {}
+    $.each(DATAS,function(strainid,genomes){
+        $.each(genomes,function(gid,datas){
+            STRAINS[datas["Accession"]] = datas["Organism"];
+        })
+    })
 
     NTERS = []
     FLAGS = []
@@ -609,14 +617,14 @@ $(".expand_next").click(function(){
     $(this).parent().next().toggleClass("constrain_height_div")
 })
 
-function get_feature_seq(seqid, seqdatas,feature_id){
+function get_feature_seq(seqid, seqdatas,ftype){
     let sequences = []
     let cpt = 0;
-    $.each(seqdatas.features, function(fid , feature){    
-        if (fid == feature_id){
+    $.each(seqdatas.features, function(fid , feature){  
+        if (feature.feature_id == ftype){
             cpt += 1;
-            let fasta = `>${seqid} ${feature_id} feature_no_${cpt}\n${feature.feature_seq}`;
-            sequences.push(fasta)                
+            let fasta = `>${seqid} ${ftype} feature_no_${cpt}\n${feature.feature_seq}`;
+            sequences.push(fasta)              
         }
     })
     return sequences
@@ -625,7 +633,8 @@ function get_feature_seq(seqid, seqdatas,feature_id){
 
 function get_seq_in_fasta_format(seqid,ftype){
     let seq_datas = SEQUENCES[seqid]
-    let header = `>${seqid} ${seq_datas.nter} ${seq_datas.cter}  ${seq_datas.flag} ${seq_datas.sequence_src}` 
+    let strain = STRAINS[seq_datas.sequence_src]
+    let header = `>Organism : ${strain}|Gene id : ${seqid}|Nter : ${seq_datas.nter}|Cter : ${seq_datas.cter}|Flag : ${seq_datas.flag}|Genome : ${seq_datas.sequence_src}`
     let fasta = [];
     if (ftype=="faa"){
         fasta = [`${header}\n${seq_datas.sequence}`]

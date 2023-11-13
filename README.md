@@ -4,7 +4,7 @@
 PCALF stand for Python CALcyanin Finder.
 
 
-
+Calcyanin have been described in the article :
 
 
 Benzerara, K., Duprat, E., Bitard-Feildel, T., Caumes, G., Cassier-Chauvat, C., Chauvat, F., ... & Callebaut, I. (2022). [A new gene family diagnostic for intracellular biomineralization of amorphous Ca carbonates by cyanobacteria](https://doi.org/10.1093/gbe/evac026). Genome Biology and Evolution, 14(3), evac026. 
@@ -43,10 +43,18 @@ its N-terminus type and its C-terminus modular organization.
 
 ## Installation :
 
+If you want to download PCALF with conda, we advise you to use [mamba](https://mamba.readthedocs.io/en/latest/mamba-installation.html#mamba-install), since installation with native conda has proven to be slow and sometimes unsuccesfull : 
+
 ```bash
 mamba create -n pcalf -c k2sohigh pcalf;
 ```
-or 
+If you still wish to download PCALF with conda, the next command will (sometimes) work :
+
+```bash
+conda create -n pcalf -c k2sohigh pcalf;
+```
+
+or
 ```bash
 pip3 install pcalf;
 ```
@@ -69,6 +77,14 @@ python-igraph==0.10.4
 ```
 blast
 ```
+If you want a standalone instalation, see BLAST manual for instructions on how to download it [on Unix](https://www.ncbi.nlm.nih.gov/books/NBK52640/) (Linux and Mac), or [on Windows](https://www.ncbi.nlm.nih.gov/books/NBK52637/).
+BLAST can also be downloaded within a conda environment
+
+```bash
+conda install -c bioconda blast
+```
+
+
 <br><br>
 ## Usage :
 
@@ -145,20 +161,20 @@ This workflow is composed of multiple steps :
 
 Note, that GTDB-TK and checkM requires external databases, respectively [GTDB](https://gtdb.ecogenomic.org/downloads) and [CheckM datas](https://data.ace.uq.edu.au/public/CheckM_databases). In addition, it's advised to run GTDB-TK and CheckM on a computer cluster. Because pcalf-annotate-workflow rely on snakemake you can easily provide a snakemake profile through the --snakargs option to run it on your favorite cluster. On the other hand, you can skip the genome taxonomic classification and the quality assessment with the --quick flag.
 
-pcalf-annotate-workflow take as input a yaml file with a specific format, see [pcalf-datasets-workflow](#pcalf-datasets-workflow-) for details.
+pcalf-annotate-workflow take as input a yaml file with a specific format, see [pcalf-datasets-workflow](#pcalf-datasets-workflow-) for details. For a regular pcalf-datasets-workflow run, this file is called genomes.yaml.
 
 example : 
 
 ```
 pcalf-annotate-workflow -i input_file.yaml 
                         -o pcalf_annotate_results 
-                        --db db_file_from_another_run.sqlite3 
+                        --db sqlite3_file_from_another_run.db
                         --snakargs "--profile my_slurm_profile --use-conda --jobs 50" 
                         --gtdb my_gtdb_directory 
                         --checkm my_checkm_datas_directory
 ```
 
-The command above will process all the genome specified in input_file.yaml through the pcalf-annotate-workflow including checkm and gtdb-tk steps. The sqlite3 file produced will be merged with db_file_from_another_run.sqlite3. The workflow will be ran on your computer cluster with 50 jobs at a time. See [snakemake documentation](https://snakemake.readthedocs.io/en/stable/) for details about cluster execution.
+The command above will process all the genome specified in input_file.yaml through the pcalf-annotate-workflow including checkm and gtdb-tk steps. The sqlite3 file produced will be merged with sqlite3_file_from_another_run.db. The workflow will be ran on your computer cluster with 50 jobs at a time. See [snakemake documentation](https://snakemake.readthedocs.io/en/stable/) for details about cluster execution.
 
 Several output files for each step will be produced but the final output is a sqlite3 database storing multiple tables: 
 ```
@@ -187,7 +203,7 @@ This command produce an HTML report from a sqlite3 database given by [pcalf anno
 example :
 
 ```
-pcalf-report --db sqlite3_file.sqlite3 --out report.html
+pcalf-report --db sqlite3_file.db --out report.html
 ```
 
 ---

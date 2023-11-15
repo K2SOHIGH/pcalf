@@ -195,7 +195,6 @@ rule cm_CHECKM_lineage_wf:
 #     shell:
 #         "{params.cmd} {input} > {output}"
 
-
 rule cm_bins_into_batches:
     output:
         os.path.join(RESDIR , "checkm-res", "tmp", 'bins', '{batch}', 'batch.tsv')

@@ -9,7 +9,8 @@ from datetime import date
 
 RESDIR = config["global"]["res_dir"]
 INPUT  = yaml.load(open(str(config["global"]["input"])) , Loader = yaml.SafeLoader) 
-QUICK  = config["global"]["skip_genome_workflow"]
+CHECKM  = config["config-genomes"]["CheckM_data"]
+GTDB  = config["config-genomes"]["GTDB"]
 
 def _2batches(bins,batch_size):    
     batches = {}
@@ -35,9 +36,10 @@ def workflow_output_files(wildcards):
         os.path.join(RESDIR , "ncbi-datas" , "ncbi_metadatas.tsv"),        
     ]
     
-    # optional files depending on the value of QUICK
-    if not QUICK:
+    # optional files depending on which analysis to perform
+    if CHECKM is not None:
         files.append(os.path.join(RESDIR,"checkm-res","checkm.done"))
+    if GTDB is not None:
         files.append(os.path.join(RESDIR,"gtdbtk-res","gtdbtk.done"))
     return files
 

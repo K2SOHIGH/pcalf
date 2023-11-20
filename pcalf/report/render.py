@@ -35,7 +35,7 @@ def define_ccya_genotype(x):
     return prefix+"-"
 
 def count_genotypes(df , group):
-    datas = {"ccyA+":0,"ccyA-":0}
+    datas = {"ccyA+":0,"ccyA-":0,"ccyA~":0}
     if group in df.columns:
         df = df.reset_index().set_index(group)
         for k in list(set(df.index)):
@@ -45,8 +45,10 @@ def count_genotypes(df , group):
                 loc = pd.DataFrame(loc).T
             if "ccyA+" in loc["(ccyA)"].values:                
                 datas["ccyA+"]+=1
-                continue
-            datas["ccyA-"]+=1
+            elif "ccyA~" in loc["(ccyA)"].values:                
+                datas["ccyA~"]+=1         
+            else :
+                datas["ccyA-"]+=1
         return datas
     else:
         raise KeyError(group)
@@ -64,13 +66,12 @@ def make_genome_pie_chart(cnx):
     summary_df["uid"] = summary_df.apply(lambda x : x.Accession.split("_")[-1].split(".")[0], axis=1 )
     summary_df["uidv"] = summary_df.apply(lambda x : x.Accession.split("_")[-1], axis=1 )
     summary_df["(DBccyA)"] = summary_df.apply(lambda x : define_ccya_genotype(x), axis=1 )
-    summary_df["(ccyA)"] = summary_df.apply(lambda x : "ccyA+" if x.flag in ["Calcyanin with known N-ter","Calcyanin with new N-ter"] else "ccyA-", axis=1 )
+    summary_df["(ccyA)"] = summary_df.apply(lambda x : "ccyA+" if x.flag in ["Calcyanin with known N-ter","Calcyanin with new N-ter"] else ("ccyA~" if x.flag in ["Atypical Gly region with new N-ter","Atypical Gly region with known N-ter"] else "ccyA-"), axis=1 )
     summary_df = summary_df[["Organism", "uid", "uidv", "Accession", "Assembly name" , "Date" , "(ccyA)" , "sequence_accession", "flag", "nter"]]
-
     # We reformat the dictionnary and make a plotly-friendly dataframe.
     metrics_d = []
     for g in ["Organism", "uid" , "uidv" , "Accession"] :
-        d = count_genotypes(summary_df , group = g)      
+        d = count_genotypes(summary_df , group = g) 
         total = len(list(summary_df[g].unique()))
         metrics_d.append(
             ("{} [{}]".format(g,total) ,"ccyA+",d["ccyA+"])
@@ -78,15 +79,16 @@ def make_genome_pie_chart(cnx):
         metrics_d.append(
             ("{} [{}]".format(g,total),"ccyA-",d["ccyA-"])
         )
-
-
+        metrics_d.append(
+            ("{} [{}]".format(g,total),"ccyA~",d["ccyA~"])
+        )
     # We make a figure with multiple pie-chart [strain, GCA-GCF, GCA, GCF].   
     metrics_df = pd.DataFrame(metrics_d)
     metrics_df.columns = ["RedLevel","genotype","count"]
     fig = px.pie(metrics_df,values="count",names="genotype",facet_col="RedLevel",color="genotype",
             color_discrete_map=
 #                 {"ccyA-":"#ffb4b4","ccyA+":"#439775","ccyA~":"orange"}
-                 {"ccyA-":"#D5D5D8","ccyA+":"#88D9E6","ccyA~":"orange"}
+                 {"ccyA-":"#D5D5D8","ccyA+":"#88D9E6","ccyA~":"#FF785A"}
                  
                 )
     return fig

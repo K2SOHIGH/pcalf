@@ -159,7 +159,16 @@ This workflow is composed of multiple steps :
 - calcyanin / ccyA linking using a specific python script.
 - NCBI metadatas recovery using [NCBI](https://www.ncbi.nlm.nih.gov/datasets/docs/v2/)
 
-Note, that GTDB-TK and checkM requires external databases, respectively [GTDB](https://gtdb.ecogenomic.org/downloads) and [CheckM datas](https://data.ace.uq.edu.au/public/CheckM_databases). In addition, it's advised to run GTDB-TK and CheckM on a computer cluster. Because pcalf-annotate-workflow rely on snakemake you can easily provide a snakemake profile through the --snakargs option to run it on your favorite cluster. On the other hand, you can skip the genome taxonomic classification and the quality assessment with the --quick flag.
+Note, that GTDB-TK and checkM requires external databases, respectively [GTDB](https://gtdb.ecogenomic.org/downloads) (~84 GB) and [CheckM datas](https://data.ace.uq.edu.au/public/CheckM_databases). As explained in [GTDB-Tk documentation](https://ecogenomics.github.io/GTDBTk/installing/index.html) GTDB can be downloaded and unarchived with the following commands :
+
+```
+wget https://data.gtdb.ecogenomic.org/releases/latest/auxillary_files/gtdbtk_data.tar.gz
+wget https://data.ace.uq.edu.au/public/gtdb/data/releases/latest/auxillary_files/gtdbtk_data.tar.gz  (or, mirror)
+tar xvzf gtdbtk_data.tar.gz
+```
+
+In addition, it's advised to run GTDB-TK and CheckM on a computer cluster. Because pcalf-annotate-workflow rely on snakemake you can easily provide a snakemake profile through the --snakargs option to run it on your favorite cluster. On the other hand, you can skip the checkm step by not calling the flag --checkm or failing to provide a path to the --checkm flag. The same can be done for the gtdtk steps with the --gtdb flag.
+
 
 pcalf-annotate-workflow take as input a yaml file with a specific format, see [pcalf-datasets-workflow](#pcalf-datasets-workflow-) for details. For a regular pcalf-datasets-workflow run, this file is called genomes.yaml.
 
@@ -210,8 +219,3 @@ pcalf-report --db sqlite3_file.db --out report.html
 <br><br>
 ## Workflow : 
 ![Workflow description](./src/pcalf/report/pcalf.svg)
-
-
-
-
-

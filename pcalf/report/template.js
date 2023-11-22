@@ -259,7 +259,7 @@ function generate_card(){
                         
                         let infos = {"genotype":"ccyA-","flag":null,"nter":null,"cter":null,"warning":null}
                         
-                        if (seqdatas.flag=="Calcyanin with known N-ter"){
+                        if (seqdatas.flag=="Calcyanin with known N-ter" ||seqdatas.flag=="Calcyanin with new N-ter" ){
                             infos["genotype"]="ccyA+";
                         } else {
                             infos["genotype"]="ccyA~";

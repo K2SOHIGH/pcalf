@@ -503,7 +503,7 @@ def make_data(cnx):
     genomes_df = pd.read_sql_query("""
         SELECT * FROM harley as h  JOIN 
         genomes as g on g.Accession = h.Accession LEFT JOIN 
-        checkm as c on g.Accession=c.`Bin Id` LEFT JOIN
+        checkm as c on g.Accession=c.`Genome` LEFT JOIN
         gtdbtk as t on g.Accession=t.`user_genome`
         """,cnx)
 

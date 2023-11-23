@@ -161,6 +161,7 @@ CREATE INDEX "ix_gtdbtk_genome" ON "gtdbtk" ("user_genome");
 
 CREATE TABLE "checkm" (
 "Bin Id" TEXT,
+  "Genome" TEXT,
   "Marker lineage" TEXT,
   "# genomes" INTEGER,
   "# markers" INTEGER,

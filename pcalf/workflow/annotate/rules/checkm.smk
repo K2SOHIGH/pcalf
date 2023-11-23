@@ -1,6 +1,7 @@
 checkm_res = "lineage_wf"
 
 FULLSTATSCOLS = ['Bin Id',
+ 'Genome',
  'Marker lineage',
  '# genomes',
  '# markers',
@@ -30,6 +31,7 @@ FULLSTATSCOLS = ['Bin Id',
  '5+']
 
 STATSCOLS = ['Bin Id',
+ 'Genome',
  'Marker lineage',
  '# genomes',
  '# markers',
@@ -45,6 +47,7 @@ STATSCOLS = ['Bin Id',
  'Strain heterogeneity']
 
 TAXCOLS = ['Bin Id',
+ 'Genome',
  '# unique markers (of 43)',
   '# multi-copy',
    'Taxonomy']
@@ -54,7 +57,7 @@ rule cm_target_checkm:
     output:
         temp(os.path.join(RESDIR,"checkm-res","checkm.done")),
     input:
-        expand(os.path.join(RESDIR , "checkm-res","tables","checkM_{table}.tsv"),table=["taxonomy","statistics_full","statistics"]),
+        expand(os.path.join(RESDIR , "checkm-res","tables","checkM_{table}.tsv"),table=["taxonomy","statistics_full","statistics"]),os.path.join(RESDIR , "checkm-res", "tmp", "checkm.done")
     params:
         tmp = os.path.join(RESDIR , "checkm-res", "tmp"),
     shell:
@@ -70,7 +73,7 @@ def aggregate_batches_checkm(wildcards):
 
 rule cm_concat_tables:
     output:
-        protected(os.path.join(RESDIR , "checkm-res","tables","checkM_{table}.tsv"))
+        os.path.join(RESDIR , "checkm-res","tables","checkM_{table}.tsv")
     input:
         aggregate_batches_checkm,         
     shell:
@@ -206,3 +209,27 @@ rule cm_bins_into_batches:
                 fh.write('{}\t{}\n'.format(
                     label, genome_path
                 ))
+
+def crop_nth_iteration (str,n,symbol):
+    pos=str.find(symbol)
+    while pos>=0 and n>1:
+        pos=str.find(symbol,pos+len(symbol))
+        n-=1
+    if pos>=0:
+        return(str[:pos])
+    else:
+        return(str)
+
+rule add_genome_col:
+    output:
+        touch(os.path.join(RESDIR , "checkm-res", "tmp", "checkm.done")),
+    input: 
+        expand(os.path.join(RESDIR , "checkm-res","tables","checkM_{table}.tsv"),table=["taxonomy","statistics_full","statistics"]),
+    run:
+        for f in input:
+            pd.set_option('display.max_columns', None)
+            df=pd.read_csv(f,sep='\t')
+            df['Genome']=df['Bin Id'].apply(lambda x:crop_nth_iteration(x,2,'_'))
+            df.insert(1,'Genome',df.pop('Genome'))
+            df.to_csv(f,sep='\t',index=False)
+

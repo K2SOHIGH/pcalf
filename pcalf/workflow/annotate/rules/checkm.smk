@@ -222,7 +222,7 @@ def crop_nth_iteration (str,n,symbol):
 
 rule add_genome_col:
     output:
-        touch(os.path.join(RESDIR , "checkm-res", "tmp", "checkm.done")),
+        touch(temp(os.path.join(RESDIR , "checkm-res", "tmp", "checkm.done"))),
     input: 
         expand(os.path.join(RESDIR , "checkm-res","tables","checkM_{table}.tsv"),table=["taxonomy","statistics_full","statistics"]),
     run:

@@ -1,5 +1,13 @@
 GTDBSUMMARYCOLS = ['user_genome',
  'classification',
+ 'domain',
+ 'phylum',
+ 'class',
+ 'order',
+ 'family',
+ 'genus',
+ 'species',
+ 'strain',
  'fastani_reference',
  'fastani_reference_radius',
  'fastani_taxonomy',
@@ -25,7 +33,7 @@ rule gm_target_gtdbtk:
     output:
         touch(temp(os.path.join(RESDIR,"gtdbtk-res","gtdbtk.done")))
     input:
-        os.path.join(RESDIR, "gtdbtk-res","gtdbtk.ar53.bac120.summary.clean.tsv"),
+        os.path.join(RESDIR, "gtdbtk-res","gtdbtk.ar53.bac120.summary.clean.tsv"),os.path.join(RESDIR, "gtdbtk-res","gtdbtk.done"),
     
 rule gm_GTDBTK_clean_table:
     output:
@@ -93,8 +101,6 @@ rule gm_gtdbtk_classify_wf:
         "touch {output}"
 
 
-#def get_batch(wildcards):
-
 
 rule gm_gtdbtk_batchfile:
     output:
@@ -107,5 +113,44 @@ rule gm_gtdbtk_batchfile:
                 fh.write("{}\tUSER_{}\n".format(                    
                     file,
                     gid
-                )) 
-            
+                ))
+
+def split_gtdb_output (raw_gtdb):
+    '''A fonction to split the output of gtdbtk'''
+    output=['NA']*8
+    raw_list=raw_gtdb.split(';')
+    for element in raw_list :
+        if element.startswith('d__'):
+            output[0]=element[3:]
+        elif element.startswith('p__'):
+            output[1]=element[3:]
+        elif element.startswith('c__'):
+            output[2]=element[3:]
+        elif element.startswith('o__'):
+            output[3]=element[3:]
+        elif element.startswith('f__'):
+            output[4]=element[3:]
+        elif element.startswith('g__'):
+            output[5]=element[3:]
+        elif element.startswith('s__'):
+            output[6]=element[3:]
+        elif element.startswith('st__'):
+            output[7]=element[4:]
+    return(output)
+
+
+rule split_classification :
+    output:
+        touch(temp(os.path.join(RESDIR, "gtdbtk-res","gtdbtk.done"))),
+    input:
+        os.path.join(RESDIR, "gtdbtk-res","gtdbtk.ar53.bac120.summary.clean.tsv"),
+    run:
+        df1=pd.read_csv(input[0], sep='\t')
+        df2=pd.DataFrame(columns=['domain','phylum','class','order','family','genus','species','strain'])
+        for indx, value in df1['classification'].items():
+            df2.loc[indx]=split_gtdb_output(value)
+        df3=pd.merge(df1,df2,left_index=True, right_index=True)
+        df3=df3[GTDBSUMMARYCOLS] #Reordering the columns
+        df3.to_csv(input[0], sep='\t',index=False)
+
+

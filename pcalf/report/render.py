@@ -516,7 +516,7 @@ def make_data(cnx):
        'Completeness', 'Contamination', 'Strain heterogeneity',
        'Genome size (bp)', '# scaffolds', '# contigs',
        'N50 (scaffolds)', 'N50 (contigs)','# predicted genes',
-       'classification', 'fastani_reference','fastani_ani']]
+       'domain','phylum','class','order','family','genus','species','strain','fastani_reference','fastani_ani']]
     
     ccyA_plus = []
     ccyA_minus = []

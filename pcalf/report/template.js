@@ -618,12 +618,10 @@ $(".expand_next").click(function(){
 })
 
 function get_feature_seq(seqid, seqdatas,ftype){
-    let sequences = []
-    let cpt = 0;
+    let sequences = [];
     $.each(seqdatas.features, function(fid , feature){  
         if (feature.feature_id == ftype){
-            cpt += 1;
-            let fasta = `>${seqid} ${ftype} feature_no_${cpt}\n${feature.feature_seq}`;
+            let fasta = `${feature.feature_seq}`;
             sequences.push(fasta)              
         }
     })
@@ -641,7 +639,7 @@ function get_seq_in_fasta_format(seqid,ftype){
     } else if (ftype == "fna"){
         fasta = [`${header}\n${seq_datas.ccyA_seq}`]
     } else {
-        fasta = get_feature_seq(seqid,seq_datas,ftype)
+        fasta = $.merge([`${header}|Feature : ${ftype}`],get_feature_seq(seqid,seq_datas,ftype))
     }
     return fasta    
 }
@@ -708,4 +706,3 @@ $(".download-batch").click(function(){
         }
     }
 })
-

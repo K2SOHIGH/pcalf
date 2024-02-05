@@ -43,21 +43,29 @@ its N-terminus type and its C-terminus modular organization.
 
 ## Installation :
 
-If you want to download PCALF with conda, we advise you to use [mamba](https://mamba.readthedocs.io/en/latest/mamba-installation.html#mamba-install), since installation with native conda has proven to be slow and sometimes unsuccesfull : 
+Conda and pip installation are not currently working for various reasons (the main one being : I don't know how to update conda package, and learning this is currently beneath "finding a job" in my to-do list)
+
+However what you can do is create a conda env
 
 ```bash
-mamba create -n pcalf -c k2sohigh pcalf;
-```
-If you still wish to download PCALF with conda, the next command will (sometimes) work :
-
-```bash
-conda create -n pcalf -c k2sohigh pcalf;
+conda create -n pcalf;
 ```
 
-or
+Then update said env with the the env.yml file that you can find on this repo.
+
 ```bash
-pip3 install pcalf;
+conda activate pcalf
+conda env update --file env.yml
 ```
+
+Which should work.
+
+Next download manually pcalf, go into pcalf directory (while still in pcalf environment created with conda) and 
+
+```bash
+pip install .
+```
+
 
 ### Dependencies :
 ```python
